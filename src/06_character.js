@@ -24,7 +24,7 @@ function sAt(seg, tau) { const { v, ta, L, T } = seg; if (tau <= 0) return 0; if
 function vAt(seg, tau) { const { v, ta, T } = seg; if (tau <= 0 || tau >= T) return 0; if (tau < ta) return v * tau / ta; if (tau > T - ta) return v * (T - tau) / ta; return v; }
 function tauAt(seg, s) { const { v, ta, L, T } = seg, sa = v * ta / 2; if (s <= sa) return Math.sqrt(2 * ta * Math.max(0, s) / v); if (s >= L - sa) return T - Math.sqrt(Math.max(0, 2 * ta * (L - s) / v)); return s / v + ta / 2; }
 RB.compile = sc => {
-  const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' };
+  const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' }, resume = false;
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
   for (const st of sc.steps) {
     if (st.walk) {
@@ -32,7 +32,7 @@ RB.compile = sc => {
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
       const curve = new THREE.CatmullRomCurve3(pts.map(V3), false, 'centripetal', 0.5), div = Math.max(240, pts.length * 80), lens = curve.getLengths(div), L = lens[div];
       const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta;
-      const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || lastCam, marks: [] };
+      const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || (resume ? Object.assign({}, lastCam, { cut: false }) : lastCam), marks: [] }; resume = false;
       for (const m of ms) { const s = lens[Math.round(m.i / (pts.length - 1) * div)], tv = t + tauAt(seg, s) / ff;
         if (m.cam) seg.marks.push({ s, cam: m.cam });
         if (m.label) labels.push({ text: m.label.text, pos: m.label.pos, hot: m.label.hot, small: m.label.small, in: tv - (m.lead === undefined ? 0.6 : m.lead), out: tv + (m.ldur || 4.5) });
@@ -40,7 +40,9 @@ RB.compile = sc => {
       lastCam = seg.marks.length ? seg.marks[seg.marks.length - 1].cam : seg.camIn;
       segs.push(seg); t = seg.t1; D += L; pos = pts[pts.length - 1].slice();
     } else if (st.stop !== undefined) {
-      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || lastCam, D0: D }; lastCam = seg.cam;
+      // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
+      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow';
+      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
       segs.push(seg); t = seg.t1;

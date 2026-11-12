@@ -51,7 +51,7 @@ RB.makeTour = () => {
   SC.push({ key: 'f1', name: '一樓', title: '一樓', sub: '大門 → 穿堂 → 教室走廊', start: gateStart, cam0: follow({ dist: 4.2, height: 2.3 }),
     steps: [
       { walk: [U(1.5, 34.8, 0.1), { p: U(6.5, 33.6, 0.1), label: { text: '大門口', pos: U(0, 34.8, 3.4) }, caption: { title: '大門口', text: '大門朝西，面對台9線（中正北路二段）。' }, lead: 1.5, cdur: 5 },
-        U(12.5, 28.5, 0.1), U(16.6, 22.5, 0.1), { p: U(17.3, 18.5, F1), cam: follow({ cut: false }) }, U(17.3, 14.6, F1)] },
+        U(12.5, 28.5, 0.1), U(16.6, 22.5, 0.1), { p: U(17.3, 18.5, F1), cam: follow({ cut: false }) }, U(18.3, 13.4, F1)] },
       { stop: 4.5, face: U(17.3, 6, F1), label: lbl(hall), caption: { title: '穿堂', text: '進大門直走就是穿堂，往東接一樓走廊。' } },
       { walk: [U(19.5, 13.7, F1), U(23.6, CV, F1), U(25.3, 13.2, F1), U(25.5, 12.45, F1)] },
       { stop: 4.5, face: U(25.5, 6, F1), cam: roomCam(office, 25.5), label: lbl(office), caption: { title: '辦公室', text: '學校的辦公室，上二樓的樓梯就在旁邊。' } },

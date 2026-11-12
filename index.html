@@ -367,7 +367,7 @@ function gableRoof(mat, u0, u1, v0, v1, he, r, o) { const vm = (v0 + v1) / 2, P 
   const L = u1 - u0 + 2 * o, S = Math.hypot(vm - v0 + o, r + o * 0.4), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d, ...e, ...d, ...c, ...e, ...c, ...f, ...a, ...d, ...e, ...b, ...f, ...c], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, S / 2, 0, 0, L / 2, S / 2, 0, S / 2, 0, 0, 0, S / 2, L / 2, S / 2, 0, 0, L / 2, S / 2, L / 2, 0, 0, 0, 0.5, 0.5, 1, 0, 0, 0, 1, 0, 0.5, 0.5], 2)); g.computeVertexNormals(); addPart(mat, g, new THREE.Matrix4()); }
 function groundPatch(mat, u0, u1, v0, v1, lift, uvm) { const nu = Math.max(2, Math.ceil((u1 - u0) / 2) + 1), nv = Math.max(2, Math.ceil((v1 - v0) / 2) + 1), pos = [], uv = [], idx = [];
-  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const u = u0 + (u1 - u0) * i / (nu - 1), v = v0 + (v1 - v0) * j / (nv - 1), [x, y] = RB.uv2xy(u, v); pos.push(x, RB.H(x, y) + lift, -y); uv.push((u - u0) / uvm, (v - v0) / uvm); }
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const u = u0 + (u1 - u0) * i / (nu - 1), v = v0 + (v1 - v0) * j / (nv - 1), [x, y] = RB.uv2xy(u, v); pos.push(x, RB.GROUND + lift, -y); uv.push((u - u0) / uvm, (v - v0) / uvm); }
   for (let j = 0; j < nv - 1; j++) for (let i = 0; i < nu - 1; i++) { const k = j * nu + i; idx.push(k, k + nu, k + 1, k + 1, k + nu, k + nu + 1); }
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); addPart(mat, g, new THREE.Matrix4()); }
 // 家具幾何
@@ -513,7 +513,7 @@ function sAt(seg, tau) { const { v, ta, L, T } = seg; if (tau <= 0) return 0; if
 function vAt(seg, tau) { const { v, ta, T } = seg; if (tau <= 0 || tau >= T) return 0; if (tau < ta) return v * tau / ta; if (tau > T - ta) return v * (T - tau) / ta; return v; }
 function tauAt(seg, s) { const { v, ta, L, T } = seg, sa = v * ta / 2; if (s <= sa) return Math.sqrt(2 * ta * Math.max(0, s) / v); if (s >= L - sa) return T - Math.sqrt(Math.max(0, 2 * ta * (L - s) / v)); return s / v + ta / 2; }
 RB.compile = sc => {
-  const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' };
+  const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' }, resume = false;
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
   for (const st of sc.steps) {
     if (st.walk) {
@@ -521,7 +521,7 @@ RB.compile = sc => {
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
       const curve = new THREE.CatmullRomCurve3(pts.map(V3), false, 'centripetal', 0.5), div = Math.max(240, pts.length * 80), lens = curve.getLengths(div), L = lens[div];
       const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta;
-      const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || lastCam, marks: [] };
+      const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || (resume ? Object.assign({}, lastCam, { cut: false }) : lastCam), marks: [] }; resume = false;
       for (const m of ms) { const s = lens[Math.round(m.i / (pts.length - 1) * div)], tv = t + tauAt(seg, s) / ff;
         if (m.cam) seg.marks.push({ s, cam: m.cam });
         if (m.label) labels.push({ text: m.label.text, pos: m.label.pos, hot: m.label.hot, small: m.label.small, in: tv - (m.lead === undefined ? 0.6 : m.lead), out: tv + (m.ldur || 4.5) });
@@ -529,7 +529,9 @@ RB.compile = sc => {
       lastCam = seg.marks.length ? seg.marks[seg.marks.length - 1].cam : seg.camIn;
       segs.push(seg); t = seg.t1; D += L; pos = pts[pts.length - 1].slice();
     } else if (st.stop !== undefined) {
-      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || lastCam, D0: D }; lastCam = seg.cam;
+      // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
+      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow';
+      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
       segs.push(seg); t = seg.t1;
@@ -667,7 +669,7 @@ RB.makeTour = () => {
   SC.push({ key: 'f1', name: '一樓', title: '一樓', sub: '大門 → 穿堂 → 教室走廊', start: gateStart, cam0: follow({ dist: 4.2, height: 2.3 }),
     steps: [
       { walk: [U(1.5, 34.8, 0.1), { p: U(6.5, 33.6, 0.1), label: { text: '大門口', pos: U(0, 34.8, 3.4) }, caption: { title: '大門口', text: '大門朝西，面對台9線（中正北路二段）。' }, lead: 1.5, cdur: 5 },
-        U(12.5, 28.5, 0.1), U(16.6, 22.5, 0.1), { p: U(17.3, 18.5, F1), cam: follow({ cut: false }) }, U(17.3, 14.6, F1)] },
+        U(12.5, 28.5, 0.1), U(16.6, 22.5, 0.1), { p: U(17.3, 18.5, F1), cam: follow({ cut: false }) }, U(18.3, 13.4, F1)] },
       { stop: 4.5, face: U(17.3, 6, F1), label: lbl(hall), caption: { title: '穿堂', text: '進大門直走就是穿堂，往東接一樓走廊。' } },
       { walk: [U(19.5, 13.7, F1), U(23.6, CV, F1), U(25.3, 13.2, F1), U(25.5, 12.45, F1)] },
       { stop: 4.5, face: U(25.5, 6, F1), cam: roomCam(office, 25.5), label: lbl(office), caption: { title: '辦公室', text: '學校的辦公室，上二樓的樓梯就在旁邊。' } },
