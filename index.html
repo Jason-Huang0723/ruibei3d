@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>瑞北 3D</title>
+<style>
+:root{ --bg:#10161c; --panel:rgba(16,22,28,.82); --ink:#f3f1ea; --ink-2:#b9c4cc; --line:rgba(255,255,255,.14); --accent:#e0a640; --chip:#1f2a33; --chip-on:#e0a640; --chip-on-ink:#1b1408; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#view{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none}
+#labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+.lb{position:absolute;left:0;top:0;transform:translate(-50%,-100%);white-space:nowrap;font-size:13px;font-weight:700;color:#fff;background:rgba(20,28,36,.8);border:1px solid rgba(255,255,255,.25);padding:3px 8px;border-radius:8px;transition:opacity .25s;will-change:transform}
+.lb::after{content:"";position:absolute;left:50%;top:100%;width:2px;height:16px;background:rgba(255,255,255,.85);transform:translateX(-50%)}
+.lb.big{font-size:15px;background:rgba(150,60,40,.88)}
+header{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;background:linear-gradient(var(--panel),rgba(16,22,28,0));pointer-events:none}
+header h1{margin:0;font-size:18px;letter-spacing:.02em}
+header p{margin:2px 0 0;font-size:12px;color:var(--ink-2)}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(env(safe-area-inset-bottom) + 8px);background:var(--panel);border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+#presets{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:6px}
+#presets::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:inherit;font-size:13px;padding:7px 12px;border-radius:999px;cursor:pointer}
+.chip.on{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+#tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#tools .chip{font-size:12px;padding:6px 10px}
+#credit{font-size:10.5px;color:var(--ink-2);margin-left:auto;text-align:right;line-height:1.35}
+#loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);z-index:10;padding:16px;text-align:center}
+#loading .t{font-size:20px;font-weight:700}
+#loading .s{font-size:13px;color:var(--ink-2);min-height:1.4em}
+#prog{width:min(320px,80vw);height:6px;background:#26313a;border-radius:3px;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+#exp{position:fixed;right:12px;top:64px;width:min(300px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;display:none;z-index:5}
+#exp h3{margin:0 0 8px;font-size:14px}
+#exp label{display:flex;align-items:center;gap:6px;margin:4px 0}
+#exp select,#exp button{font:inherit;font-size:13px}
+#exp .msg{color:var(--ink-2);margin-top:8px;min-height:1.3em}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="labels"></div>
+<header><h1>瑞北國小・瑞北社區 3D</h1><p>拖曳旋轉・雙指縮放・點下方按鈕移動到各地點</p></header>
+<div id="bar">
+  <div id="presets"></div>
+  <div id="tools">
+    <button class="chip" id="tour">▶ 播放導覽</button>
+    <button class="chip on" id="lbl">標籤</button>
+    <button class="chip" id="expBtn">匯出影片</button>
+    <div id="credit">影像、建物框：內政部國土測繪中心｜道路：© OpenStreetMap 貢獻者｜地形：Mapzen Terrain Tiles</div>
+  </div>
+</div>
+<div id="exp">
+  <h3>匯出影片（1920×1080 MP4）</h3>
+  <label>鏡頭 <select id="expShot"></select></label>
+  <label><input type="checkbox" id="expLbl" checked> 加上標籤與標題</label>
+  <button class="chip" id="expGo">開始匯出</button> <button class="chip" id="expClose">關閉</button>
+  <div class="msg" id="expMsg">需要電腦版 Chrome／Edge。每段約 1–2 分鐘，完成後自動下載。</div>
+</div>
+<div id="loading"><div class="t">瑞北 3D 載入中</div><div id="prog"><i></i></div><div class="s" id="ls">準備中…</div></div>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ================= 1. 座標、圖磚、快取 ================= */
+const RB = window.RB = {};
+const q = new URLSearchParams(location.search);
+RB.LOW = q.get('q') === 'low' || (q.get('q') !== 'high' && (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || (navigator.deviceMemory && navigator.deviceMemory <= 4) || Math.min(innerWidth, innerHeight) < 600));
+RB.GEO = { lat0: 23.5255, lon0: 121.3790 };
+RB.GEO.mx = 111320 * Math.cos(RB.GEO.lat0 * Math.PI / 180); RB.GEO.my = 110574;
+RB.toLocal = (lon, lat) => [(lon - RB.GEO.lon0) * RB.GEO.mx, (lat - RB.GEO.lat0) * RB.GEO.my];
+RB.toLL = (x, y) => [RB.GEO.lon0 + x / RB.GEO.mx, RB.GEO.lat0 + y / RB.GEO.my];
+RB.lon2x = (lon, z) => (lon + 180) / 360 * 2 ** z;
+RB.lat2y = (lat, z) => { const s = Math.sin(lat * Math.PI / 180); return (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * 2 ** z; };
+RB.x2lon = (x, z) => x / 2 ** z * 360 - 180;
+RB.y2lat = (y, z) => { const n = Math.PI - 2 * Math.PI * y / 2 ** z; return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n))); };
+RB.pool = async (items, n, fn) => { const res = new Array(items.length); let i = 0; await Promise.all(Array.from({ length: n }, async () => { while (i < items.length) { const k = i++; try { res[k] = await fn(items[k], k); } catch (e) { res[k] = null; } } })); return res; };
+// IndexedDB 快取（失敗就不快取）
+let dbp = null;
+const openDB = () => dbp || (dbp = new Promise(res => { try { const r = indexedDB.open('ruibei3d', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => res(r.result); r.onerror = () => res(null); } catch (e) { res(null); } }));
+RB.idbGet = async k => { const db = await openDB(); if (!db) return undefined; return new Promise(res => { try { const t = db.transaction('kv').objectStore('kv').get(k); t.onsuccess = () => res(t.result); t.onerror = () => res(undefined); } catch (e) { res(undefined); } }); };
+RB.idbPut = async (k, v) => { const db = await openDB(); if (!db) return false; return new Promise(res => { try { const t = db.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = () => res(true); t.onerror = () => res(false); } catch (e) { res(false); } }); };
+RB.fetchBlob = async url => { let b = await RB.idbGet('u:' + url); if (b) return b; const r = await fetch(url); if (!r.ok) throw new Error(r.status + ' ' + url); b = await r.blob(); RB.idbPut('u:' + url, b); return b; };
+RB.wmts = (layer, z, x, y) => `https://wmts.nlsc.gov.tw/wmts/${layer}/default/GoogleMapsCompatible/${z}/${y}/${x}`;
+RB.tileBitmap = async (layer, z, x, y) => { try { return await createImageBitmap(await RB.fetchBlob(RB.wmts(layer, z, x, y))); } catch (e) { return null; } };
+RB.mosaic = async (layer, z, xmin, xmax, ymin, ymax, onp) => {
+  const [lonA, latA] = RB.toLL(xmin, ymax), [lonB, latB] = RB.toLL(xmax, ymin);
+  const px0 = RB.lon2x(lonA, z) * 256, py0 = RB.lat2y(latA, z) * 256, px1 = RB.lon2x(lonB, z) * 256, py1 = RB.lat2y(latB, z) * 256;
+  const W = Math.round(px1 - px0), H = Math.round(py1 - py0); const cv = new OffscreenCanvas(W, H); const g = cv.getContext('2d', { willReadFrequently: true });
+  const L = []; for (let y = Math.floor(py0 / 256); y <= Math.floor((py1 - 1) / 256); y++) for (let x = Math.floor(px0 / 256); x <= Math.floor((px1 - 1) / 256); x++) L.push([x, y]);
+  let done = 0; await RB.pool(L, 12, async ([x, y]) => { const bm = await RB.tileBitmap(layer, z, x, y); if (bm) g.drawImage(bm, x * 256 - px0, y * 256 - py0); if (onp && ++done % 20 === 0) onp(done / L.length); });
+  return { cv, g, W, H, px0, py0, z };
+};
+RB.terrainGrid = async (z, xmin, xmax, ymin, ymax, nx, ny) => {
+  const [lonA, latA] = RB.toLL(xmin, ymax), [lonB, latB] = RB.toLL(xmax, ymin);
+  const tx0 = Math.floor(RB.lon2x(lonA, z)), ty0 = Math.floor(RB.lat2y(latA, z)), tx1 = Math.floor(RB.lon2x(lonB, z)), ty1 = Math.floor(RB.lat2y(latB, z));
+  const W = (tx1 - tx0 + 1) * 256, H = (ty1 - ty0 + 1) * 256; const cv = new OffscreenCanvas(W, H); const g = cv.getContext('2d', { willReadFrequently: true });
+  const L = []; for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) L.push([x, y]);
+  await RB.pool(L, 8, async ([x, y]) => { const b = await RB.fetchBlob(`https://s3.amazonaws.com/elevation-tiles-prod/terrarium/${z}/${x}/${y}.png`); const bm = await createImageBitmap(b, { colorSpaceConversion: 'none', premultiplyAlpha: 'none' }); g.drawImage(bm, (x - tx0) * 256, (y - ty0) * 256); });
+  const d = g.getImageData(0, 0, W, H).data; const E = new Float32Array(W * H); for (let i = 0; i < W * H; i++) E[i] = d[i * 4] * 256 + d[i * 4 + 1] + d[i * 4 + 2] / 256 - 32768;
+  const smp = (gx, gy) => { gx = Math.max(0, Math.min(W - 1.001, gx)); gy = Math.max(0, Math.min(H - 1.001, gy)); const x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0, i = y0 * W + x0; return E[i] * (1 - fx) * (1 - fy) + E[i + 1] * fx * (1 - fy) + E[i + W] * (1 - fx) * fy + E[i + W + 1] * fx * fy; };
+  const out = new Float32Array(nx * ny);
+  for (let j = 0; j < ny; j++) { const yl = ymax - (ymax - ymin) * j / (ny - 1); for (let i = 0; i < nx; i++) { const xl = xmin + (xmax - xmin) * i / (nx - 1); const [lon, lat] = RB.toLL(xl, yl); out[j * nx + i] = smp(RB.lon2x(lon, z) * 256 - tx0 * 256 - 0.5, RB.lat2y(lat, z) * 256 - ty0 * 256 - 0.5); } }
+  return { E: out, nx, ny, xmin, xmax, ymin, ymax };
+};
+
+/* ================= 2. 地形 ================= */
+RB.RECT = { region: [-15000, 15000, -15000, 15000], village: [-1600, 900, -2100, 3600], core: [-450, 450, -600, 600] };
+function bil(G, x, y) { const fx = (x - G.xmin) / (G.xmax - G.xmin) * (G.nx - 1), fy = (G.ymax - y) / (G.ymax - G.ymin) * (G.ny - 1); const i = Math.max(0, Math.min(G.nx - 1.0001, fx)), j = Math.max(0, Math.min(G.ny - 1.0001, fy)); const i0 = Math.floor(i), j0 = Math.floor(j), u = i - i0, v = j - j0, E = G.E, n = G.nx; return E[j0 * n + i0] * (1 - u) * (1 - v) + E[j0 * n + i0 + 1] * u * (1 - v) + E[(j0 + 1) * n + i0] * (1 - u) * v + E[(j0 + 1) * n + i0 + 1] * u * v; }
+RB.hRaw = (x, y) => { const [a, b, c, d] = RB.RECT.village; const hr = bil(RB.Hr, x, y); if (x < a || x > b || y < c || y > d) return hr; const t = Math.min(1, Math.min(x - a, b - x, y - c, d - y) / 150); return hr * (1 - t) + bil(RB.Hv, x, y) * t; };
+RB.H = (x, y) => RB.hRaw(x, y) - RB.BASE;
+RB.buildHeights = async () => { const [a, b, c, d] = RB.RECT.village; RB.Hv = await RB.terrainGrid(15, a, b, c, d, Math.round((b - a) / 8) + 1, Math.round((d - c) / 8) + 1); const [e, f, g, h] = RB.RECT.region; RB.Hr = await RB.terrainGrid(11, e, f, g, h, 301, 301); RB.BASE = RB.hRaw(0, 0); };
+RB.terrainMesh = (rect, nx, ny, tex, hole, sink) => {
+  const [a, b, c, d] = rect; const pos = new Float32Array(nx * ny * 3), uv = new Float32Array(nx * ny * 2); const M = tex.merc;
+  for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) { const x = a + (b - a) * i / (nx - 1), y = d - (d - c) * j / (ny - 1), k = j * nx + i; pos[k * 3] = x; pos[k * 3 + 1] = RB.H(x, y) - (sink || 0); pos[k * 3 + 2] = -y; const [lon, lat] = RB.toLL(x, y); uv[k * 2] = (RB.lon2x(lon, M.z) * 256 - M.px0) / M.W; uv[k * 2 + 1] = 1 - (RB.lat2y(lat, M.z) * 256 - M.py0) / M.H; }
+  const idx = []; for (let j = 0; j < ny - 1; j++) for (let i = 0; i < nx - 1; i++) { const k = j * nx + i; if (hole) { const x0 = a + (b - a) * i / (nx - 1), x1 = a + (b - a) * (i + 1) / (nx - 1), y0 = d - (d - c) * (j + 1) / (ny - 1), y1 = d - (d - c) * j / (ny - 1); if (x0 >= hole[0] && x1 <= hole[1] && y0 >= hole[2] && y1 <= hole[3]) continue; } idx.push(k, k + nx, k + 1, k + 1, k + nx, k + nx + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+};
+RB.makeTex = (M, aniso) => { const t = new THREE.CanvasTexture(M.cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso || 8; t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping; t.merc = { z: M.z, px0: M.px0, py0: M.py0, W: M.W, H: M.H }; return t; };
+
+/* ================= 3. 正射影像：去浮水印、調色 ================= */
+// 國土測繪中心影像有半透明「NLSC 2022」浮水印，以固定地理格點排列（z19 約 620×449 px，z18 為一半）。
+RB.cleanWM = (cv, opt = {}) => {
+  const W = cv.width, H = cv.height, g = cv.getContext('2d', { willReadFrequently: true }), img = g.getImageData(0, 0, W, H), d = img.data;
+  const Lm = new Float32Array(W * H); for (let p = 0; p < W * H; p++) Lm[p] = (d[p * 4] + d[p * 4 + 1] + d[p * 4 + 2]) / 3;
+  const blur = (src, r) => { const tmp = new Float32Array(W * H), out = new Float32Array(W * H); for (let y = 0; y < H; y++) { let s = 0; for (let x = -r; x <= r; x++) s += src[y * W + Math.min(W - 1, Math.max(0, x))]; for (let x = 0; x < W; x++) { tmp[y * W + x] = s / (2 * r + 1); s += src[y * W + Math.min(W - 1, x + r + 1)] - src[y * W + Math.max(0, x - r)]; } } for (let x = 0; x < W; x++) { let s = 0; for (let y = -r; y <= r; y++) s += tmp[Math.min(H - 1, Math.max(0, y)) * W + x]; for (let y = 0; y < H; y++) { out[y * W + x] = s / (2 * r + 1); s += tmp[Math.min(H - 1, y + r + 1) * W + x] - tmp[Math.max(0, y - r) * W + x]; } } return out; };
+  const sc = opt.scale || 1; const bl = blur(Lm, Math.max(2, Math.round(5 * sc))), bg = blur(Lm, Math.max(4, Math.round(12 * sc)));
+  const hp = new Float32Array(W * H); for (let p = 0; p < W * H; p++) { const mx = Math.max(d[p * 4], d[p * 4 + 1], d[p * 4 + 2]), mn = Math.min(d[p * 4], d[p * 4 + 1], d[p * 4 + 2]); hp[p] = (mx - mn < 55) ? Math.max(0, Lm[p] - bl[p]) : 0; }
+  const PX = Math.round(620 * sc), PY = Math.round(449 * sc), BW = Math.round(240 * sc), BH = Math.round(56 * sc), IW = Math.round(220 * sc), IH = Math.round(40 * sc);
+  const I = new Float64Array((W + 1) * (H + 1)); for (let y = 0; y < H; y++) { let row = 0; for (let x = 0; x < W; x++) { row += hp[y * W + x]; I[(y + 1) * (W + 1) + x + 1] = I[y * (W + 1) + x + 1] + row; } }
+  const box = (x, y, w, h) => { x = Math.max(0, x); y = Math.max(0, y); const x1 = Math.min(W, x + w), y1 = Math.min(H, y + h); if (x1 <= x || y1 <= y) return 0; return I[y1 * (W + 1) + x1] - I[y * (W + 1) + x1] - I[y1 * (W + 1) + x] + I[y * (W + 1) + x]; };
+  let best = -1, bo = [0, 0]; for (let oy = 0; oy < PY; oy += 2) for (let ox = 0; ox < PX; ox += 2) { let s = 0; for (let y = oy; y < H - IH; y += PY) for (let x = ox; x < W - IW; x += PX) s += box(x, y, IW, IH); if (s > best) { best = s; bo = [ox, oy]; } }
+  let inst = []; for (let y0 = bo[1] % PY - PY; y0 < H; y0 += PY) for (let x0 = bo[0] % PX - PX; x0 < W; x0 += PX) inst.push([x0 - Math.round(10 * sc), y0 - Math.round(8 * sc)]);
+  const full = p => p[0] >= 0 && p[1] >= 0 && p[0] + BW <= W && p[1] + BH <= H; const T = new Float32Array(BW * BH);
+  const build = () => { T.fill(0); let c = 0; for (const p of inst) { if (!full(p)) continue; for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) T[y * BW + x] += hp[(p[1] + y) * W + p[0] + x]; c++; } for (let i = 0; i < T.length; i++) T[i] /= Math.max(1, c); };
+  build(); const RR = Math.max(3, Math.round(8 * sc));
+  for (let it = 0; it < 3; it++) { inst = inst.map(p => { let bb = -1e9, bp = p; for (let dy = -RR; dy <= RR; dy++) for (let dx = -RR; dx <= RR; dx++) { const qq = [p[0] + dx, p[1] + dy]; let s = 0; for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) { const X = qq[0] + x, Y = qq[1] + y; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; s += T[y * BW + x] * hp[Y * W + X]; } if (s > bb) { bb = s; bp = qq; } } return bp; }); build(); }
+  const A = new Float32Array(BW * BH), C = new Float32Array(BW * BH); for (const p of inst) { if (!full(p)) continue; for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) { const qq = (p[1] + y) * W + p[0] + x; A[y * BW + x] += (Lm[qq] - bg[qq]) / Math.max(40, 255 - bg[qq]); C[y * BW + x]++; } }
+  let amax = 0; for (let i = 0; i < A.length; i++) { A[i] = C[i] ? A[i] / C[i] : 0; amax = Math.max(amax, A[i]); } for (let i = 0; i < A.length; i++) A[i] = A[i] < amax * 0.15 ? 0 : Math.min(0.85, A[i] * 1.5);
+  for (const p of inst) for (let y = 0; y < BH; y++) for (let x = 0; x < BW; x++) { const a = A[y * BW + x]; if (a <= 0) continue; const X = p[0] + x, Y = p[1] + y; if (X < 0 || Y < 0 || X >= W || Y >= H) continue; const k = (Y * W + X) * 4; for (let c = 0; c < 3; c++) d[k + c] = Math.max(0, Math.min(255, (d[k + c] - 255 * a) / (1 - a))); }
+  g.putImageData(img, 0, 0);
+};
+RB.cleanMosaic = (M, opt) => { const W = M.W, H = M.H, strip = 1600, ov = 240; for (let y0 = 0; y0 < H; y0 += strip) { const ys = Math.max(0, y0 - ov), ye = Math.min(H, y0 + strip + ov), h = ye - ys; if (h < 300) continue; const tc = new OffscreenCanvas(W, h); tc.getContext('2d', { willReadFrequently: true }).drawImage(M.cv, 0, ys, W, h, 0, 0, W, h); RB.cleanWM(tc, opt); const yy = Math.min(H, y0 + strip); M.g.drawImage(tc, 0, y0 - ys, W, yy - y0, 0, y0, W, yy - y0); } };
+RB.grade = M => { const tmp = new OffscreenCanvas(M.W, M.H), tg = tmp.getContext('2d'); tg.filter = 'contrast(1.07) saturate(1.12) brightness(1.04)'; tg.drawImage(M.cv, 0, 0); tg.filter = 'none'; tg.globalCompositeOperation = 'multiply'; tg.fillStyle = 'rgb(255,244,226)'; tg.fillRect(0, 0, M.W, M.H); M.g.globalCompositeOperation = 'copy'; M.g.drawImage(tmp, 0, 0); M.g.globalCompositeOperation = 'source-over'; };
+RB.decloud = M => { const id = M.g.getImageData(0, 0, M.W, M.H), d = id.data; for (let p = 0; p < d.length; p += 4) { const r = d[p], g = d[p + 1], b = d[p + 2], L = (r + g + b) / 3, sat = Math.max(r, g, b) - Math.min(r, g, b); if (L > 165 && sat < 40) { const t = Math.min(1, (L - 165) / 50); d[p] = r * (1 - t) + 70 * t; d[p + 1] = g * (1 - t) + 88 * t; d[p + 2] = b * (1 - t) + 62 * t; } } M.g.putImageData(id, 0, 0); };
+RB.halve = M => { const W = Math.round(M.W / 2), H = Math.round(M.H / 2), cv = new OffscreenCanvas(W, H), g = cv.getContext('2d', { willReadFrequently: true }); g.imageSmoothingQuality = 'high'; g.drawImage(M.cv, 0, 0, W, H); return { cv, g, W, H, px0: M.px0 / 2, py0: M.py0 / 2, z: M.z - 1 }; };
+RB.loadOrtho = async st => {
+  const R_ = RB.RECT, O = {};
+  st('下載大範圍影像', 0.30); O.region = await RB.mosaic('PHOTO2', 13, ...R_.region); RB.decloud(O.region);
+  if (RB.LOW) {
+    st('下載社區影像', 0.38); O.village = await RB.mosaic('PHOTO2', 17, ...R_.village, f => st('下載社區影像', 0.38 + 0.1 * f));
+    st('下載學校周邊影像', 0.48); O.core = await RB.mosaic('PHOTO2', 18, ...R_.core); st('去除影像浮水印', 0.52); RB.cleanMosaic(O.core, { scale: 0.5 });
+  } else {
+    st('下載社區影像', 0.38); const vf = await RB.mosaic('PHOTO2', 18, ...R_.village, f => st('下載社區影像', 0.38 + 0.1 * f)); st('去除影像浮水印', 0.48); RB.cleanMosaic(vf, { scale: 0.5 }); O.village = RB.halve(vf);
+    st('下載學校周邊影像', 0.52); O.core = await RB.mosaic('PHOTO2', 19, ...R_.core); st('去除影像浮水印', 0.56); RB.cleanMosaic(O.core, { scale: 1 });
+  }
+  for (const k of ['core', 'village', 'region']) RB.grade(O[k]); RB.ORTHO = O;
+};
+
+/* ================= 4. 房屋：從「分棟建物框」描出輪廓 ================= */
+function trace(L, W, H, lab, s) { const pts = [], dx = [1, 1, 0, -1, -1, -1, 0, 1], dy = [0, 1, 1, 1, 0, -1, -1, -1]; let x = s % W, y = (s / W) | 0; const sx = x, sy = y; let dir = 7, guard = 0; do { pts.push([x, y]); let f = false; for (let k = 0; k < 8; k++) { const dd = (dir + 6 + k) % 8, nx = x + dx[dd], ny = y + dy[dd]; if (nx >= 0 && ny >= 0 && nx < W && ny < H && L[ny * W + nx] === lab) { x = nx; y = ny; dir = dd; f = true; break; } } if (!f || ++guard > 400000) break; } while (!(x === sx && y === sy)); return pts; }
+function dp(pts, eps) { if (pts.length < 3) return pts; const keep = new Uint8Array(pts.length); keep[0] = keep[pts.length - 1] = 1; const st = [[0, pts.length - 1]]; while (st.length) { const [a, b] = st.pop(); let md = 0, mi = -1; const [ax, ay] = pts[a], [bx, by] = pts[b], Ln = Math.hypot(bx - ax, by - ay) || 1; for (let i = a + 1; i < b; i++) { const dd = Math.abs((bx - ax) * (ay - pts[i][1]) - (ax - pts[i][0]) * (by - ay)) / Ln; if (dd > md) { md = dd; mi = i; } } if (md > eps) { keep[mi] = 1; st.push([a, mi], [mi, b]); } } return pts.filter((_, i) => keep[i]); }
+function simplifyRing(pts, eps) { if (pts.length < 8) return pts; let far = 0, fd = 0; for (let i = 1; i < pts.length; i++) { const dd = Math.hypot(pts[i][0] - pts[0][0], pts[i][1] - pts[0][1]); if (dd > fd) { fd = dd; far = i; } } const a = dp(pts.slice(0, far + 1), eps), b = dp(pts.slice(far).concat([pts[0]]), eps); return a.slice(0, -1).concat(b.slice(0, -1)); }
+RB.area = P => { let a = 0; for (let i = 0; i < P.length; i++) { const p = P[i], qq = P[(i + 1) % P.length]; a += p[0] * qq[1] - qq[0] * p[1]; } return a / 2; };
+RB.offset = (P, dd) => { const s = Math.sign(RB.area(P)) || 1, n = P.length, out = []; for (let i = 0; i < n; i++) { const a = P[(i - 1 + n) % n], b = P[i], c = P[(i + 1) % n]; let e1 = [b[0] - a[0], b[1] - a[1]], e2 = [c[0] - b[0], c[1] - b[1]]; const l1 = Math.hypot(...e1) || 1, l2 = Math.hypot(...e2) || 1; e1 = [e1[0] / l1, e1[1] / l1]; e2 = [e2[0] / l2, e2[1] / l2]; const n1 = [e1[1] * s, -e1[0] * s], n2 = [e2[1] * s, -e2[0] * s]; let m = [n1[0] + n2[0], n1[1] + n2[1]]; const lm = Math.hypot(...m) || 1; m = [m[0] / lm, m[1] / lm]; const ch = Math.max(0.35, m[0] * n1[0] + m[1] * n1[1]); out.push([b[0] + m[0] * dd / ch, b[1] + m[1] * dd / ch]); } return out; };
+RB.inPoly = (P, x, y) => { let c = false; for (let i = 0, j = P.length - 1; i < P.length; j = i++) { const a = P[i], b = P[j]; if (((a[1] > y) !== (b[1] > y)) && (x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; };
+RB.hash = (x, y, s) => { const h = Math.sin(x * 12.9898 + y * 78.233 + (s || 0) * 37.719) * 43758.5453; return h - Math.floor(h); };
+RB.CAMPUS = [[-50.7, 50.6], [-58, 20.3], [-66.2, -12.1], [56.2, -42], [62.8, -11.7], [71.8, 20.7]];
+RB.vecChunk = async (z, x0, y0, nx, ny) => {
+  const W = nx * 256, H = ny * 256, cv = new OffscreenCanvas(W, H), g = cv.getContext('2d', { willReadFrequently: true }); const list = []; for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) list.push([i, j]);
+  await RB.pool(list, 12, async ([i, j]) => { const bm = await RB.tileBitmap('BUILDX', z, x0 + i, y0 + j); if (bm) g.drawImage(bm, i * 256, j * 256); });
+  const d = g.getImageData(0, 0, W, H).data, N = W * H, line = new Uint8Array(N); for (let p = 0; p < N; p++) line[p] = d[p * 4 + 3] > 10 ? 1 : 0;
+  const ln = line.slice(); for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) { const p = y * W + x; if (line[p]) { ln[p - 1] = ln[p + 1] = ln[p - W] = ln[p + W] = ln[p - W - 1] = ln[p - W + 1] = ln[p + W - 1] = ln[p + W + 1] = 1; } }
+  const L = new Int32Array(N), qq = new Int32Array(N), comps = []; let nl = 0;
+  for (let s = 0; s < N; s++) { if (ln[s] || L[s]) continue; nl++; let h = 0, t = 0; qq[t++] = s; L[s] = nl; let border = false, cnt = 0, sxs = 0, sys = 0;
+    while (h < t) { const p = qq[h++]; cnt++; const x = p % W, y = (p / W) | 0; sxs += x; sys += y; if (x === 0 || y === 0 || x === W - 1 || y === H - 1) border = true; if (x > 0 && !ln[p - 1] && !L[p - 1]) { L[p - 1] = nl; qq[t++] = p - 1; } if (x < W - 1 && !ln[p + 1] && !L[p + 1]) { L[p + 1] = nl; qq[t++] = p + 1; } if (y > 0 && !ln[p - W] && !L[p - W]) { L[p - W] = nl; qq[t++] = p - W; } if (y < H - 1 && !ln[p + W] && !L[p + W]) { L[p + W] = nl; qq[t++] = p + W; } }
+    if (border) continue; const cx = sxs / cnt, cy = sys / cnt; if (cx < 256 || cy < 256 || cx >= W - 256 || cy >= H - 256) continue; comps.push({ lab: nl, start: s, cnt }); }
+  const mpp = 40075016.7 * Math.cos(RB.GEO.lat0 * Math.PI / 180) / 2 ** z / 256, res = [];
+  for (const c of comps) { const area = c.cnt * mpp * mpp; if (area < 10 || area > 12000) continue; const sr = simplifyRing(trace(L, W, H, c.lab, c.start), 1.4); if (sr.length < 3) continue; let poly = sr.map(([px, py]) => RB.toLocal(RB.x2lon((x0 * 256 + px + 0.5) / 256, z), RB.y2lat((y0 * 256 + py + 0.5) / 256, z))); poly = RB.offset(poly, 1.6 * mpp).map(p => [Math.round(p[0] * 100) / 100, Math.round(p[1] * 100) / 100]); res.push({ area: Math.round(Math.abs(RB.area(poly)) * 10) / 10, poly }); }
+  return res;
+};
+RB.loadBuildings = async st => {
+  const z = RB.LOW ? 18 : 19, key = 'buildings_z' + z; let B = await RB.idbGet(key); if (B && B.length) { RB.BUILD = B; return; }
+  const [xmin, xmax, ymin, ymax] = RB.LOW ? [-1400, 600, -1500, 2000] : [-1400, 600, -1800, 3320];
+  const [lonA, latA] = RB.toLL(xmin, ymax), [lonB, latB] = RB.toLL(xmax, ymin); const tx0 = Math.floor(RB.lon2x(lonA, z)), ty0 = Math.floor(RB.lat2y(latA, z)), tx1 = Math.floor(RB.lon2x(lonB, z)), ty1 = Math.floor(RB.lat2y(latB, z));
+  const jobs = []; for (let y = ty0; y <= ty1; y += 6) for (let x = tx0; x <= tx1; x += 6) jobs.push([x - 1, y - 1]); B = []; let k = 0;
+  for (const [x, y] of jobs) { B.push(...await RB.vecChunk(z, x, y, 8, 8)); st('描出房屋輪廓', 0.62 + 0.18 * (++k / jobs.length)); }
+  RB.BUILD = B; RB.idbPut(key, B);
+};
+RB.facadeMaterial = () => {
+  const S = 256, cv = new OffscreenCanvas(S * 4, S * 2), g = cv.getContext('2d');
+  const styles = [{ wall: '#e8e2d4', tile: '#d6cfbf', sh: '#9aa3a8' }, { wall: '#d9c7b0', tile: '#c4b097', sh: '#7f8c8d' }, { wall: '#c9c9c4', tile: '#b5b5ae', sh: '#8a8f94' }, { wall: '#e9ece8', tile: '#cfd6d2', sh: '#6f8796' }];
+  styles.forEach((st, k) => { const x0 = k * S; g.fillStyle = st.wall; g.fillRect(x0, 0, S, S * 2); g.strokeStyle = st.tile; g.lineWidth = 1; for (let y = 0; y < S * 2; y += 10) { g.beginPath(); g.moveTo(x0, y + .5); g.lineTo(x0 + S, y + .5); g.stroke(); } for (let x = 0; x < S; x += 20) { g.beginPath(); g.moveTo(x0 + x + .5, 0); g.lineTo(x0 + x + .5, S * 2); g.stroke(); }
+    const gr = g.createLinearGradient(0, 0, 0, S * 2); gr.addColorStop(0, 'rgba(60,60,55,0.10)'); gr.addColorStop(0.5, 'rgba(60,60,55,0)'); gr.addColorStop(1, 'rgba(40,40,35,0.18)'); g.fillStyle = gr; g.fillRect(x0, 0, S, S * 2);
+    const wx = x0 + S * 0.18, wy = S * 0.22, ww = S * 0.64, wh = S * 0.48; g.fillStyle = '#5d6a72'; g.fillRect(wx - 4, wy - 4, ww + 8, wh + 8); const gl = g.createLinearGradient(wx, wy, wx + ww, wy + wh); gl.addColorStop(0, '#33424d'); gl.addColorStop(0.45, '#6f8796'); gl.addColorStop(1, '#26323a'); g.fillStyle = gl; g.fillRect(wx, wy, ww, wh);
+    g.strokeStyle = '#b7bdc0'; g.lineWidth = 4; g.strokeRect(wx, wy, ww, wh); g.beginPath(); g.moveTo(wx + ww / 2, wy); g.lineTo(wx + ww / 2, wy + wh); g.stroke();
+    g.strokeStyle = 'rgba(55,55,55,0.85)'; g.lineWidth = 2; for (let x = wx - 6; x <= wx + ww + 6; x += 12) { g.beginPath(); g.moveTo(x, wy - 8); g.lineTo(x, wy + wh + 6); g.stroke(); } g.strokeRect(wx - 8, wy - 10, ww + 16, wh + 18);
+    g.fillStyle = 'rgba(0,0,0,0.25)'; g.fillRect(x0, S - 10, S, 6);
+    if (k % 2 === 0) { const sx = x0 + S * 0.1, sy = S + S * 0.18, sw = S * 0.8, sh = S * 0.82; g.fillStyle = st.sh; g.fillRect(sx, sy, sw, sh); g.fillStyle = 'rgba(0,0,0,0.18)'; for (let y = sy; y < sy + sh; y += 6) g.fillRect(sx, y, sw, 2); g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(sx - 4, sy - 8, sw + 8, 8); }
+    else { g.fillStyle = '#4a3f35'; g.fillRect(x0 + S * 0.12, S + S * 0.25, S * 0.28, S * 0.75); g.fillStyle = '#5d6a72'; g.fillRect(x0 + S * 0.5, S + S * 0.3, S * 0.38, S * 0.38); g.strokeStyle = '#b7bdc0'; g.lineWidth = 4; g.strokeRect(x0 + S * 0.5, S + S * 0.3, S * 0.38, S * 0.38); }
+    g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x0, S * 2 - 14, S, 14); });
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+  const m = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.85, vertexColors: true, side: THREE.DoubleSide });
+  m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nattribute vec4 aWall; varying vec4 vWall;').replace('#include <uv_vertex>', '#include <uv_vertex>\nvWall = aWall;');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec4 vWall;').replace('#include <map_fragment>', ['vec2 raw=vec2(vWall.x/3.4, vWall.y/3.2); float fl=floor(raw.y), fy=fract(raw.y), bx=fract(raw.x);', 'vec2 uvw; if(vWall.y > vWall.z-0.85) uvw=vec2(0.03,0.97); else if(fl<0.5) uvw=vec2(bx, fy*0.5); else uvw=vec2(bx, 0.5+fy*0.5);', 'uvw.x=(vWall.w+0.02+uvw.x*0.96)/4.0;', 'diffuseColor *= textureGrad(map, uvw, dFdx(raw)*vec2(0.25,0.5), dFdy(raw)*vec2(0.25,0.5));'].join('\n')); };
+  return m;
+};
+RB.buildCommunity = () => {
+  const W = { pos: [], nor: [], col: [], aw: [] }, roofs = { core: { pos: [], idx: [], n: 0 }, village: { pos: [], idx: [], n: 0 } }; const [ca, cb, cc, cd] = RB.RECT.core;
+  for (const b of RB.BUILD) { let P = b.poly; if (P.length < 3) continue; const cx = P.reduce((s, p) => s + p[0], 0) / P.length, cy = P.reduce((s, p) => s + p[1], 0) / P.length; if (RB.inPoly(RB.CAMPUS, cx, cy)) continue; if (RB.area(P) < 0) P = P.slice().reverse();
+    const A = b.area, r = RB.hash(cx, cy, 1); let fl; if (A < 22) fl = 0.8; else if (A < 60) fl = r < 0.6 ? 1 : 2; else if (A < 260) fl = r < 0.33 ? 1 : r < 0.68 ? 2 : r < 0.94 ? 3 : 4; else if (A < 650) fl = r < 0.55 ? 1 : r < 0.92 ? 2 : 3; else fl = 1.7;
+    const top = fl * 3.2 + (fl >= 1 && A < 650 ? 0.9 : 0.3); let gmin = 1e9; for (const p of P) gmin = Math.min(gmin, RB.H(p[0], p[1])); const base = gmin - 0.4, roofY = gmin + top;
+    const style = Math.floor(RB.hash(cx, cy, 2) * 4), tint = 0.86 + RB.hash(cx, cy, 3) * 0.22, tr = tint * (0.97 + RB.hash(cx, cy, 4) * 0.06), tb = tint * (0.95 + RB.hash(cx, cy, 5) * 0.06);
+    let acc = 0; for (let i = 0; i < P.length; i++) { const p = P[i], qq = P[(i + 1) % P.length], L = Math.hypot(qq[0] - p[0], qq[1] - p[1]); if (L < 0.05) continue; const nx = (qq[1] - p[1]) / L, ny = -(qq[0] - p[0]) / L, hb = base - gmin;
+      const quad = [[p, base, acc, hb], [qq, base, acc + L, hb], [qq, roofY, acc + L, top], [p, roofY, acc, top]]; for (const o of [0, 1, 2, 0, 2, 3]) { const [pt, y, u, h] = quad[o]; W.pos.push(pt[0], y, -pt[1]); W.nor.push(nx, 0, -ny); W.col.push(tr, tint, tb); W.aw.push(u, Math.max(0, h), top, style); } acc += L; }
+    const R = (cx >= ca && cx <= cb && cy >= cc && cy <= cd) ? roofs.core : roofs.village; const tri = THREE.ShapeUtils.triangulateShape(P.map(p => new THREE.Vector2(p[0], p[1])), []); const off = R.n; for (const p of P) { R.pos.push(p[0], roofY, -p[1]); R.n++; } for (const t of tri) R.idx.push(off + t[0], off + t[2], off + t[1]); }
+  const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(W.pos, 3)); wg.setAttribute('normal', new THREE.Float32BufferAttribute(W.nor, 3)); wg.setAttribute('color', new THREE.Float32BufferAttribute(W.col, 3)); wg.setAttribute('aWall', new THREE.Float32BufferAttribute(W.aw, 4)); wg.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(W.pos.length / 3 * 2), 2));
+  const mk = (R, tex) => { const g = new THREE.BufferGeometry(), pos = new Float32Array(R.pos), uv = new Float32Array(R.n * 2), M = tex.merc; for (let k = 0; k < R.n; k++) { const [lon, lat] = RB.toLL(pos[k * 3], -pos[k * 3 + 2]); uv[k * 2] = (RB.lon2x(lon, M.z) * 256 - M.px0) / M.W; uv[k * 2 + 1] = 1 - (RB.lat2y(lat, M.z) * 256 - M.py0) / M.H; } g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.BufferAttribute(uv, 2)); g.setIndex(R.idx); g.computeVertexNormals(); return g; };
+  return { walls: wg, roofCore: mk(roofs.core, RB.tex.tC), roofVillage: mk(roofs.village, RB.tex.tV) };
+};
+
+/* ================= 5. 樹、道路 ================= */
+RB.ROADW = { primary: 11, primary_link: 7, secondary: 8, tertiary: 7, unclassified: 5, residential: 4.5, service: 3.5 };
+RB.loadOSM = async () => { let O = await RB.idbGet('osm_village'); if (O) { RB.OSM = O; return; } const [a, b, c, d] = RB.RECT.village; const [lonA, latA] = RB.toLL(a, c), [lonB, latB] = RB.toLL(b, d); const r = await fetch(`https://api.openstreetmap.org/api/0.6/map.json?bbox=${lonA.toFixed(5)},${latA.toFixed(5)},${lonB.toFixed(5)},${latB.toFixed(5)}`); const j = await r.json(); const nodes = new Map(); for (const e of j.elements) if (e.type === 'node') nodes.set(e.id, e); const ways = []; for (const e of j.elements) if (e.type === 'way' && e.tags) ways.push({ t: e.tags, P: e.nodes.map(id => nodes.get(id)).filter(Boolean).map(n => RB.toLocal(n.lon, n.lat)) }); RB.OSM = { ways }; RB.idbPut('osm_village', RB.OSM); };
+RB.computeTrees = () => {
+  const M = RB.ORTHO.village, W = M.W, H = M.H, img = M.g.getImageData(0, 0, W, H).data; const toPx = (x, y) => { const [lon, lat] = RB.toLL(x, y); return [RB.lon2x(lon, M.z) * 256 - M.px0, RB.lat2y(lat, M.z) * 256 - M.py0]; }; const mpp = 40075016.7 * Math.cos(RB.GEO.lat0 * Math.PI / 180) / 2 ** M.z / 256;
+  const mc = new OffscreenCanvas(W, H), mg = mc.getContext('2d', { willReadFrequently: true }); mg.fillStyle = mg.strokeStyle = '#fff';
+  for (const b of RB.BUILD) { mg.beginPath(); b.poly.forEach((p, i) => { const [px, py] = toPx(p[0], p[1]); i ? mg.lineTo(px, py) : mg.moveTo(px, py); }); mg.closePath(); mg.fill(); mg.lineWidth = 3 / mpp; mg.stroke(); }
+  for (const w of RB.OSM.ways) { const hw = w.t.highway, rw = RB.ROADW[hw] || (hw === 'track' || hw === 'cycleway' ? 3 : 0) || (w.t.railway ? 6 : 0); if (!rw) continue; mg.lineWidth = (rw + 3) / mpp; mg.beginPath(); w.P.forEach((p, i) => { const [px, py] = toPx(p[0], p[1]); i ? mg.lineTo(px, py) : mg.moveTo(px, py); }); mg.stroke(); }
+  const mask = mg.getImageData(0, 0, W, H).data, [a, b, c, d] = RB.RECT.village, out = [], step = RB.LOW ? 6 : 4.5, r = mpp < 1.5 ? 2 : 1;
+  for (let y = c + 2; y < d - 2; y += step) for (let x = a + 2; x < b - 2; x += step) { const jx = x + (RB.hash(x, y, 7) - 0.5) * step * 0.8, jy = y + (RB.hash(x, y, 8) - 0.5) * step * 0.8; let [px, py] = toPx(jx, jy); px = Math.round(px); py = Math.round(py); if (px < 3 || py < 3 || px >= W - 3 || py >= H - 3) continue; if (mask[(py * W + px) * 4] > 0 || RB.inPoly(RB.CAMPUS, jx, jy)) continue;
+    let sr = 0, sg = 0, sb = 0, sl = 0, sl2 = 0, n = 0; for (let yy = -r; yy <= r; yy++) for (let xx = -r; xx <= r; xx++) { const i = ((py + yy) * W + px + xx) * 4, R = img[i], G = img[i + 1], B = img[i + 2]; sr += R; sg += G; sb += B; const l = 0.3 * R + 0.59 * G + 0.11 * B; sl += l; sl2 += l * l; n++; }
+    sr /= n; sg /= n; sb /= n; const L = sl / n, V = sl2 / n - L * L; if (sg - (sr + sb) / 2 > 3 && L < 92 && V > (r === 2 ? 60 : 30)) out.push([jx, jy, sr, sg, sb, RB.hash(jx, jy, 9)]); }
+  if (RB.LOW && out.length > 26000) { out.sort((p, qq) => Math.hypot(p[0], p[1]) - Math.hypot(qq[0], qq[1])); out.length = 26000; }
+  RB.TREES = out;
+};
+RB.buildTrees = () => {
+  const T = RB.TREES; const crownG = (() => { const g = new THREE.SphereGeometry(1, RB.LOW ? 9 : 14, RB.LOW ? 7 : 10), p = g.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i), y = p.getY(i), z = p.getZ(i), n = 1 + 0.16 * Math.sin(x * 5.1 + y * 3.7) * Math.cos(z * 4.3 + x * 2.1) + 0.09 * Math.sin(y * 9 + z * 7) + 0.06 * Math.cos(x * 13 + z * 11); p.setXYZ(i, x * n, (y < 0 ? y * 0.55 : y * 0.85) * n, z * n); } g.computeVertexNormals(); return g; })();
+  const trunkG = new THREE.CylinderGeometry(0.11, 0.2, 1, 6, 1, true); trunkG.translate(0, 0.5, 0);
+  const palmG = (() => { const pos = [], N = 9; for (let k = 0; k < N; k++) { const a = k / N * Math.PI * 2 + (k % 2) * 0.2, ca = Math.cos(a), sa = Math.sin(a), tilt = (k % 3) * 0.12; for (let s = 0; s < 5; s++) { const r0 = s / 5 * 1.15, r1 = (s + 1) / 5 * 1.15, w0 = 0.24 * (1 - s / 5) + 0.02, w1 = 0.24 * (1 - (s + 1) / 5) + 0.02, y0 = 0.25 + tilt - 0.9 * r0 * r0, y1 = 0.25 + tilt - 0.9 * r1 * r1; const P = (r, w, y) => [ca * r - sa * w, y, sa * r + ca * w]; const A = P(r0, -w0, y0), B = P(r0, w0, y0), C = P(r1, w1, y1), D = P(r1, -w1, y1); pos.push(...A, ...B, ...C, ...A, ...C, ...D); } } const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.computeVertexNormals(); return g; })();
+  const nB = T.filter(t => t[5] >= 0.18).length, nP = T.length - nB;
+  const crowns = new THREE.InstancedMesh(crownG, new THREE.MeshStandardMaterial({ roughness: 0.95 }), nB), trunks = new THREE.InstancedMesh(trunkG, new THREE.MeshStandardMaterial({ color: 0x5a4a3a, roughness: 1 }), T.length), palms = new THREE.InstancedMesh(palmG, new THREE.MeshStandardMaterial({ roughness: 0.9, side: THREE.DoubleSide }), nP);
+  const m = new THREE.Matrix4(), qq = new THREE.Quaternion(), s = new THREE.Vector3(), p = new THREE.Vector3(), col = new THREE.Color(), up = new THREE.Vector3(0, 1, 0); let ib = 0, ip = 0;
+  T.forEach((t, k) => { const [x, y, r, g, b, h] = t, gy = RB.H(x, y); qq.setFromAxisAngle(up, RB.hash(x, y, 11) * Math.PI * 2); col.setRGB(Math.min(1, r / 255 * 1.15), Math.min(1, g / 255 * 1.25), Math.min(1, b / 255 * 1.05), THREE.SRGBColorSpace);
+    if (h >= 0.18) { const ht = 5.5 + RB.hash(x, y, 12) * 6.5, cr = 2.2 + RB.hash(x, y, 13) * 2.2; p.set(x, gy + ht - cr * 0.7, -y); s.set(cr, cr, cr); m.compose(p, qq, s); crowns.setMatrixAt(ib, m); crowns.setColorAt(ib, col); ib++; p.set(x, gy - 0.3, -y); s.set(1 + cr * 0.15, ht - cr * 0.9, 1 + cr * 0.15); m.compose(p, qq, s); trunks.setMatrixAt(k, m); }
+    else { const ht = 8 + RB.hash(x, y, 14) * 5; p.set(x, gy + ht, -y); s.set(2.6, 2.2, 2.6); m.compose(p, qq, s); palms.setMatrixAt(ip, m); col.offsetHSL(0.02, 0.05, 0.04); palms.setColorAt(ip, col); ip++; p.set(x, gy - 0.3, -y); s.set(0.75, ht + 0.3, 0.75); m.compose(p, qq, s); trunks.setMatrixAt(k, m); } });
+  return [crowns, trunks, palms].map(o => { o.castShadow = o.receiveShadow = true; o.frustumCulled = false; return o; });
+};
+RB.buildRoads = () => {
+  const asphalt = [], lines = []; const push = (arr, P, w, dy) => { for (let i = 0; i < P.length - 1; i++) { const a = P[i], b = P[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]); if (L < 0.1) continue; const nx = -(b[1] - a[1]) / L * w / 2, ny = (b[0] - a[0]) / L * w / 2, segs = Math.max(1, Math.ceil(L / 8)); for (let s = 0; s < segs; s++) { const t0 = s / segs, t1 = (s + 1) / segs, p0 = [a[0] + (b[0] - a[0]) * t0, a[1] + (b[1] - a[1]) * t0], p1 = [a[0] + (b[0] - a[0]) * t1, a[1] + (b[1] - a[1]) * t1]; const v = [[p0[0] + nx, p0[1] + ny], [p0[0] - nx, p0[1] - ny], [p1[0] - nx, p1[1] - ny], [p1[0] + nx, p1[1] + ny]].map(qq => [qq[0], RB.H(qq[0], qq[1]) + dy, -qq[1]]); arr.push(...v[0], ...v[1], ...v[2], ...v[0], ...v[2], ...v[3]); } } };
+  const offs = (P, o) => P.map((p, i) => { const a = P[Math.max(0, i - 1)], b = P[Math.min(P.length - 1, i + 1)], L = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1; return [p[0] - (b[1] - a[1]) / L * o, p[1] + (b[0] - a[0]) / L * o]; });
+  for (const w of RB.OSM.ways) { const rw = RB.ROADW[w.t.highway]; if (!rw) continue; push(asphalt, w.P, rw, 0.3); if (w.t.highway === 'primary') { push(lines, offs(w.P, 0.12), 0.13, 0.34); push(lines, offs(w.P, -0.12), 0.13, 0.34); } }
+  const mk = arr => { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(arr, 3)); g.computeVertexNormals(); return g; };
+  return [new THREE.Mesh(mk(asphalt), new THREE.MeshStandardMaterial({ color: 0x55575a, roughness: 0.95 })), new THREE.Mesh(mk(lines), new THREE.MeshStandardMaterial({ color: 0xe0b020, roughness: 0.7 }))].map(o => { o.receiveShadow = true; return o; });
+};
+
+/* ================= 6. 瑞北國小（依場地平面圖＋建物框） ================= */
+// 校地座標：原點=校地西北角，u 沿北側圍牆往東（m），v 往南（m）；校地 126 × 64.6 m，偏轉約 −14°
+RB.CF = { o: [-50.7, 50.6], eu: [0.9715, -0.2371], ev: [-0.2371, -0.9715] };
+RB.uv2xy = (u, v) => [RB.CF.o[0] + u * RB.CF.eu[0] + v * RB.CF.ev[0], RB.CF.o[1] + u * RB.CF.eu[1] + v * RB.CF.ev[1]];
+RB.campusAngle = Math.atan2(RB.CF.eu[1], RB.CF.eu[0]);
+RB.GROUND = 0;
+const canvasTex = (w, h, draw) => { const cv = new OffscreenCanvas(w, h), g = cv.getContext('2d'); draw(g, w, h); const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; };
+function schoolMaterials() { const M = {}, S = (o) => new THREE.MeshStandardMaterial(o);
+  M.wall = S({ roughness: 0.8, map: canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#ece3cf'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(0,0,0,0.05)'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 1); g.fillStyle = '#f6f3ec'; g.fillRect(0, h * 0.22, w, 6); g.fillRect(0, h * 0.78, w, 8); const wx = w * 0.08, wy = h * 0.27, ww = w * 0.84, wh = h * 0.48; g.fillStyle = '#d9dde0'; g.fillRect(wx - 5, wy - 5, ww + 10, wh + 10); const gl = g.createLinearGradient(wx, wy, wx, wy + wh); gl.addColorStop(0, '#5b7484'); gl.addColorStop(0.5, '#8aa3b1'); gl.addColorStop(1, '#3f5563'); g.fillStyle = gl; g.fillRect(wx, wy, ww, wh); g.strokeStyle = '#e9edef'; g.lineWidth = 5; for (let i = 0; i <= 4; i++) { const x = wx + ww * i / 4; g.beginPath(); g.moveTo(x, wy); g.lineTo(x, wy + wh); g.stroke(); } g.beginPath(); g.moveTo(wx, wy + wh * 0.62); g.lineTo(wx + ww, wy + wh * 0.62); g.stroke(); g.strokeRect(wx, wy, ww, wh); g.fillStyle = 'rgba(60,50,40,0.18)'; g.fillRect(0, h - 10, w, 10); }) });
+  M.corrWall = S({ roughness: 0.8, map: canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#ece3cf'; g.fillRect(0, 0, w, h); g.fillStyle = 'rgba(0,0,0,0.05)'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 1); const gl = g.createLinearGradient(0, h * 0.2, 0, h * 0.5); gl.addColorStop(0, '#6a8290'); gl.addColorStop(1, '#425866'); g.fillStyle = '#e6e9eb'; g.fillRect(w * 0.05, h * 0.18, w * 0.55, h * 0.36); g.fillStyle = gl; g.fillRect(w * 0.07, h * 0.2, w * 0.51, h * 0.32); g.strokeStyle = '#eef1f2'; g.lineWidth = 4; for (let i = 1; i < 3; i++) { const x = w * 0.07 + w * 0.51 * i / 3; g.beginPath(); g.moveTo(x, h * 0.2); g.lineTo(x, h * 0.52); g.stroke(); } g.fillStyle = '#e6e9eb'; g.fillRect(w * 0.68, h * 0.18, w * 0.26, h * 0.82); g.fillStyle = '#7a5c3e'; g.fillRect(w * 0.7, h * 0.2, w * 0.22, h * 0.8); g.fillStyle = '#8aa3b1'; g.fillRect(w * 0.73, h * 0.26, w * 0.16, h * 0.22); g.fillStyle = 'rgba(60,50,40,0.2)'; g.fillRect(0, h - 10, w, 10); }) });
+  M.roof = S({ roughness: 0.75, side: THREE.DoubleSide, map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#a84e36'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(0, y, w, 2); for (let x = (y / 8 % 2) * 8; x < w; x += 16) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x, y, 1, 8); } } }) });
+  Object.assign(M, { plain: S({ color: 0xece3cf, roughness: 0.85 }), white: S({ color: 0xf3f1ea, roughness: 0.7 }), column: S({ color: 0xe9e1cd, roughness: 0.8 }), floor: S({ color: 0x9c9a94, roughness: 0.9 }), rail: S({ color: 0x3f7f6a, roughness: 0.6, metalness: 0.2 }), hall: S({ color: 0xe4dccb, roughness: 0.85 }), glass: S({ color: 0x6d8794, roughness: 0.15, metalness: 0.3 }), stage: S({ color: 0xd8d2c4, roughness: 0.85 }), fence: S({ color: 0x4d6b5c, roughness: 0.6, metalness: 0.3 }), gate: S({ color: 0xb9bec2, roughness: 0.4, metalness: 0.6 }), pillar: S({ color: 0xd4c7ad, roughness: 0.85 }), play: S({ color: 0xd94f3a, roughness: 0.6 }), play2: S({ color: 0x2f7fc1, roughness: 0.6 }), play3: S({ color: 0xf2c230, roughness: 0.6 }) });
+  const noise = (g, n, base, amp, count, size) => { g.fillStyle = base; g.fillRect(0, 0, n, n); for (let i = 0; i < count; i++) { const x = Math.random() * n, y = Math.random() * n, r = Math.random() * size + 0.5, a = (Math.random() - 0.5) * amp; g.fillStyle = a > 0 ? `rgba(255,255,230,${a})` : `rgba(0,20,0,${-a})`; g.fillRect(x, y, r, r * (0.6 + Math.random())); } };
+  M.grass = S({ roughness: 1, map: canvasTex(512, 512, (g, n) => { noise(g, n, '#6c8a4c', 0.24, 30000, 3); for (let i = 0; i < 40; i++) { const x = Math.random() * n, y = Math.random() * n, r = 20 + Math.random() * 60, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(140,120,70,0.22)'); gr.addColorStop(1, 'rgba(140,120,70,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } for (let i = 0; i < n; i += 64) { g.fillStyle = 'rgba(255,255,200,0.04)'; g.fillRect(i, 0, 32, n); } }) });
+  M.clay = S({ roughness: 1, map: canvasTex(256, 256, (g, n) => noise(g, n, '#a95b3c', 0.18, 18000, 3)) });
+  M.conc = S({ roughness: 0.95, map: canvasTex(256, 256, (g, n) => { noise(g, n, '#b9b6ad', 0.10, 9000, 2); g.strokeStyle = 'rgba(60,60,60,0.35)'; g.lineWidth = 2; for (let i = 0; i <= n; i += n / 2) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, n); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(n, i); g.stroke(); } }) });
+  M.court = S({ roughness: 0.9, color: 0x3f6f5a }); M.line = S({ color: 0xf2f2ea, roughness: 0.8 });
+  return M; }
+function obox(mat, u0, u1, v0, v1, h0, h1, uvScale) { const ext = (h0 === 0 && h1 > 0.5) ? 1.5 : 0; h0 -= ext; const w = u1 - u0, dd = v1 - v0, h = h1 - h0, g = new THREE.BoxGeometry(w, h, dd);
+  if (uvScale) { const uv = g.attributes.uv, n = g.attributes.normal, p = g.attributes.position; for (let i = 0; i < uv.count; i++) { const nx = Math.abs(n.getX(i)), ny = Math.abs(n.getY(i)), px = p.getX(i) + w / 2, py = p.getY(i) + h / 2 - ext, pz = p.getZ(i) + dd / 2; if (ny > 0.5) uv.setXY(i, px / uvScale[0], pz / uvScale[0]); else if (nx > 0.5) uv.setXY(i, pz / uvScale[0], py / uvScale[1]); else uv.setXY(i, px / uvScale[0], py / uvScale[1]); } }
+  const m = new THREE.Mesh(g, mat), [x, y] = RB.uv2xy((u0 + u1) / 2, (v0 + v1) / 2); m.position.set(x, RB.GROUND + (h0 + h1) / 2, -y); m.rotation.y = RB.campusAngle; m.castShadow = m.receiveShadow = true; return m; }
+function gableRoof(mat, u0, u1, v0, v1, he, r, o) { const vm = (v0 + v1) / 2, P = (u, v, h) => { const [x, y] = RB.uv2xy(u, v); return [x, RB.GROUND + h, -y]; };
+  const a = P(u0 - o, v0 - o, he - o * 0.4), b = P(u1 + o, v0 - o, he - o * 0.4), c = P(u1 + o, vm, he + r), d = P(u0 - o, vm, he + r), e = P(u0 - o, v1 + o, he - o * 0.4), f = P(u1 + o, v1 + o, he - o * 0.4);
+  const L = u1 - u0 + 2 * o, S = Math.hypot(vm - v0 + o, r + o * 0.4), g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d, ...e, ...d, ...c, ...e, ...c, ...f, ...a, ...d, ...e, ...b, ...f, ...c], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, S / 2, 0, 0, L / 2, S / 2, 0, S / 2, 0, 0, 0, S / 2, L / 2, S / 2, 0, 0, L / 2, S / 2, L / 2, 0, 0, 0, 0.5, 0.5, 1, 0, 0, 0, 1, 0, 0.5, 0.5], 2)); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.castShadow = m.receiveShadow = true; return m; }
+function groundPatch(mat, u0, u1, v0, v1, lift, uvm) { const step = 2, nu = Math.max(2, Math.ceil((u1 - u0) / step) + 1), nv = Math.max(2, Math.ceil((v1 - v0) / step) + 1), pos = [], uv = [], idx = [];
+  for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const u = u0 + (u1 - u0) * i / (nu - 1), v = v0 + (v1 - v0) * j / (nv - 1), [x, y] = RB.uv2xy(u, v); pos.push(x, RB.H(x, y) + lift, -y); uv.push((u - u0) / uvm, (v - v0) / uvm); }
+  for (let j = 0; j < nv - 1; j++) for (let i = 0; i < nu - 1; i++) { const k = j * nu + i; idx.push(k, k + nu, k + 1, k + 1, k + nu, k + nu + 1); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); const m = new THREE.Mesh(g, mat); m.receiveShadow = true; return m; }
+RB.buildSchool = () => {
+  const G = new THREE.Group(), M = schoolMaterials(), fh = 3.6, bayW = 3.2, A = o => G.add(o);
+  let hs = 0, n = 0; for (let u = 0; u <= 126; u += 10) for (let v = 0; v <= 64; v += 8) { const [x, y] = RB.uv2xy(u, v); hs += RB.H(x, y); n++; } RB.GROUND = hs / n;
+  const v0 = 2, v1 = 12.2, v2 = 15, uW = 13, uE = 77;
+  // 北排兩層樓教室（一樓：辦公室、四～一年級、廁所；二樓：校長室、會議室、樓梯、圖書室、英語教室、五教、六教）
+  A(obox(M.wall, uW, uE, v0, v0 + 0.3, 0, fh * 2 + 0.6, [bayW, fh])); A(obox(M.corrWall, uW, uE, v1 - 0.3, v1, 0, fh * 2 + 0.6, [bayW, fh]));
+  A(obox(M.plain, uW, uW + 0.3, v0, v1, 0, fh * 2 + 0.6)); A(obox(M.plain, uE - 0.3, uE, v0, v2, 0, fh * 2 + 0.6));
+  for (const u of [32.7, 42, 51.5, 60.6, 70.2]) A(obox(M.plain, u - 0.12, u + 0.12, v0, v1, 0, fh * 2));
+  A(obox(M.white, uW, uE, v0, v2 + 0.15, fh - 0.05, fh + 0.25)); A(obox(M.white, uW - 0.4, uE + 0.4, v0 - 0.4, v2 + 0.6, fh * 2 + 0.3, fh * 2 + 0.7)); A(obox(M.floor, uW, uE, v1, v2, -0.05, 0.25));
+  for (let u = uW; u <= uE + 0.01; u += 3.2) A(obox(M.column, u - 0.22, u + 0.22, v2 - 0.45, v2, 0, fh * 2 + 0.3));
+  A(obox(M.white, uW, uE, v2 - 0.15, v2, fh + 0.25, fh + 1.25)); A(obox(M.rail, uW, uE, v2 - 0.1, v2 + 0.02, fh + 1.25, fh + 1.32)); A(obox(M.white, uW, uE, v2 - 0.3, v2 + 0.05, 0, 0.35));
+  A(gableRoof(M.roof, uW, uE, v0, v2, fh * 2 + 0.7, 2.2, 0.6));
+  // 穿堂、司令台、旗桿
+  A(obox(M.plain, 13, 24, v2, 21, fh - 0.1, fh + 0.4)); for (const [u, v] of [[13.3, 20.6], [23.7, 20.6], [13.3, 17.5], [23.7, 17.5]]) A(obox(M.column, u - 0.25, u + 0.25, v - 0.25, v + 0.25, 0, fh)); A(obox(M.floor, 13, 24, v2, 21, -0.05, 0.2));
+  A(obox(M.stage, 58, 68, 15, 18.6, 0, 1.1)); A(obox(M.white, 58.5, 67.5, 15.2, 18.4, 3.9, 4.2)); for (const u of [58.8, 67.2]) A(obox(M.column, u - 0.2, u + 0.2, 18.0, 18.4, 1.1, 3.9));
+  for (const u of [61, 63, 65]) A(obox(M.gate, u - 0.06, u + 0.06, 21, 21.12, 0, 9));
+  // 廁所、禮堂（風雨教室）
+  A(obox(M.plain, 77, 84.8, v0, v1, 0, fh)); A(gableRoof(M.roof, 77, 84.8, v0, v1, fh, 1.0, 0.3));
+  const hu0 = 84.8, hu1 = 105, hh = 7.8; A(obox(M.hall, hu0, hu1, v0, v2, 0, hh, [4, 4]));
+  for (let u = hu0 + 1.6; u < hu1 - 1; u += 3.4) { A(obox(M.glass, u, u + 1.8, v0 - 0.05, v0 + 0.02, 2.2, 6.2)); A(obox(M.glass, u, u + 1.8, v2 - 0.02, v2 + 0.05, 2.2, 6.2)); }
+  A(obox(M.gate, hu0 + 2.0, hu0 + 4.4, v2 - 0.02, v2 + 0.08, 0, 2.6)); A(gableRoof(M.roof, hu0, hu1, v0, v2, hh, 2.6, 0.7));
+  // 西側連通走廊
+  A(obox(M.white, 20, 24, 21, 55, 3.0, 3.3)); for (let v = 21; v <= 55; v += 3.4) { A(obox(M.column, 20.1, 20.5, v - 0.2, v + 0.2, 0, 3.0)); A(obox(M.column, 23.5, 23.9, v - 0.2, v + 0.2, 0, 3.0)); } A(obox(M.floor, 20, 24, 21, 55, -0.05, 0.15));
+  // 南排：器材室、國幼班、遊樂器材
+  A(obox(M.wall, 20, 32, 55.5, 64, 0, fh + 0.3, [bayW, fh])); A(gableRoof(M.roof, 20, 32, 55.5, 64, fh + 0.3, 1.4, 0.4));
+  A(obox(M.wall, 32, 77, 58.5, 66, 0, fh + 0.3, [bayW, fh])); A(obox(M.floor, 32, 77, 56, 58.5, -0.05, 0.2)); for (let u = 32; u <= 77.01; u += 3.2) A(obox(M.column, u - 0.18, u + 0.18, 56, 56.36, 0, fh + 0.3)); A(gableRoof(M.roof, 32, 77, 56, 66, fh + 0.3, 1.6, 0.5));
+  A(obox(M.play2, 80, 84, 57, 60, 0, 2.2)); A(obox(M.play, 80.5, 83.5, 57.3, 59.7, 2.2, 3.2)); A(obox(M.play3, 84, 88, 58, 59, 0.4, 0.6)); for (const u of [88.5, 91.5]) A(obox(M.gate, u - 0.06, u + 0.06, 55.5, 55.62, 0, 2.6)); A(obox(M.gate, 88.5, 91.5, 55.5, 55.62, 2.5, 2.62));
+  // 其他校內建物（西南角、東南角）
+  A(obox(M.wall, 2.5, 7, 45, 62, 0, fh, [bayW, fh])); A(obox(M.wall, 3, 17, 62, 66.5, 0, fh, [bayW, fh])); A(obox(M.wall, 99, 112, 46.5, 58.5, 0, fh, [bayW, fh])); A(obox(M.wall, 100.5, 114.5, 60.5, 68, 0, fh, [bayW, fh]));
+  // 西側圍牆與大門
+  const fence = (ua, va, ub, vb) => { const L = Math.hypot(ub - ua, vb - va), steps = Math.ceil(L / 2.5); for (let i = 0; i <= steps; i++) { const t = i / steps, u = ua + (ub - ua) * t, v = va + (vb - va) * t; A(obox(M.fence, u - 0.05, u + 0.05, v - 0.05, v + 0.05, 0, 1.8)); } };
+  fence(0.3, 0.5, 0.3, 32.5); fence(0.3, 37.2, 0.3, 44); A(obox(M.pillar, 0.3, 0.6, 0.5, 32.5, 0, 0.5)); A(obox(M.pillar, 0.3, 0.6, 37.2, 44, 0, 0.5)); A(obox(M.fence, 0.38, 0.52, 0.5, 32.5, 1.7, 1.8)); A(obox(M.fence, 0.38, 0.52, 37.2, 44, 1.7, 1.8));
+  A(obox(M.pillar, -0.3, 1.0, 31.6, 32.6, 0, 2.6)); A(obox(M.pillar, -0.3, 1.0, 37.1, 38.1, 0, 2.6)); A(obox(M.gate, 0.6, 0.8, 23, 32.4, 0.1, 1.6));
+  // 地面：水泥、紅土跑道、草皮、籃球場
+  A(groundPatch(M.conc, 0.6, 26, 15, 46, 0.07, 6)); A(groundPatch(M.conc, 13, 105, 15, 18.7, 0.07, 6)); A(groundPatch(M.clay, 26, 103, 18.7, 24, 0.08, 4)); A(groundPatch(M.grass, 26, 98, 24, 54, 0.08, 8)); A(groundPatch(M.conc, 24, 98, 54, 56, 0.07, 6)); A(groundPatch(M.court, 106, 124, 6, 44, 0.08, 5));
+  A(groundPatch(M.line, 107, 123, 25, 25.15, 0.1, 1)); A(groundPatch(M.line, 107, 107.15, 8, 42, 0.1, 1)); A(groundPatch(M.line, 122.85, 123, 8, 42, 0.1, 1));
+  return G;
+};
+
+/* ================= 7. 場景 ================= */
+RB.buildScene = async st => {
+  const sc = new THREE.Scene(); RB.scene = sc;
+  const az = 132 * Math.PI / 180, el = 36 * Math.PI / 180; RB.sunDir = new THREE.Vector3(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el));
+  const sky = new THREE.Mesh(new THREE.SphereGeometry(1, 32, 16), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, depthTest: false, fog: false, uniforms: { sunDir: { value: RB.sunDir.clone() } },
+    vertexShader: 'varying vec3 vDir; void main(){ vDir = normalize(position); vec4 p = projectionMatrix*modelViewMatrix*vec4(position,1.0); gl_Position = p.xyww; }',
+    fragmentShader: 'uniform vec3 sunDir; varying vec3 vDir; void main(){ float e = clamp(vDir.y,-0.2,1.0); vec3 c = mix(vec3(0.70,0.78,0.86), vec3(0.22,0.42,0.72), pow(max(e,0.0),0.55)); if(e<0.0) c = vec3(0.70,0.78,0.86)*0.95; float s = max(dot(normalize(vDir), normalize(sunDir)),0.0); c += vec3(1.0,0.92,0.75)*(pow(s,800.0)*6.0 + pow(s,12.0)*0.25); gl_FragColor = vec4(c,1.0); }' }));
+  sky.frustumCulled = false; sky.renderOrder = -1; RB.sky = sky; sc.add(sky);
+  sc.fog = new THREE.FogExp2(0xb8c6d2, 0.000062); sc.add(new THREE.HemisphereLight(0xbfd4ea, 0x5f6448, 0.95));
+  const sun = new THREE.DirectionalLight(0xfff1dc, 3.1); sun.castShadow = true; sun.shadow.mapSize.set(RB.LOW ? 2048 : 4096, RB.LOW ? 2048 : 4096); sun.shadow.bias = -0.0004; sun.shadow.normalBias = 0.04; sc.add(sun, sun.target); RB.sun = sun;
+  const O = RB.ORTHO, tR = RB.makeTex(O.region, 8), tV = RB.makeTex(O.village, 16), tC = RB.makeTex(O.core, 16); RB.tex = { tR, tV, tC };
+  const R_ = RB.RECT, shrink = (r, m) => [r[0] + m, r[1] - m, r[2] + m, r[3] - m], dim = (r, s) => [Math.round((r[1] - r[0]) / s) + 1, Math.round((r[3] - r[2]) / s) + 1];
+  st('建立地形', 0.82);
+  for (const [rect, s, tex, hole, sink] of [[R_.region, 100, tR, shrink(R_.village, 250), 0.5], [R_.village, 10, tV, shrink(R_.core, 30), 0.12], [R_.core, 4, tC, null, 0]]) { const [nx, ny] = dim(rect, s); const m = new THREE.Mesh(RB.terrainMesh(rect, nx, ny, tex, hole, sink), new THREE.MeshStandardMaterial({ map: tex, roughness: 1 })); m.receiveShadow = true; sc.add(m); }
+  st('建立房屋', 0.86); const C = RB.buildCommunity(), walls = new THREE.Mesh(C.walls, RB.facadeMaterial()); walls.castShadow = walls.receiveShadow = true; sc.add(walls);
+  for (const [g, t] of [[C.roofCore, tC], [C.roofVillage, tV]]) { const m = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ map: t, roughness: 0.9 })); m.castShadow = m.receiveShadow = true; sc.add(m); }
+  st('種樹、鋪路', 0.9); RB.computeTrees(); for (const o of RB.buildTrees()) sc.add(o); for (const o of RB.buildRoads()) sc.add(o);
+  st('建立學校', 0.95); sc.add(RB.buildSchool());
+};
+RB.setShadowFocus = (cx, cz, r) => { const s = RB.sun, d = RB.sunDir; s.target.position.set(cx, 0, cz); s.position.set(cx + d.x * 3000, d.y * 3000, cz + d.z * 3000); const c = s.shadow.camera; c.left = -r; c.right = r; c.top = r; c.bottom = -r; c.near = 100; c.far = 6000; c.updateProjectionMatrix(); s.target.updateMatrixWorld(); };
+
+/* ================= 8. 標籤與鏡頭 ================= */
+RB.W3 = (x, y, h) => [x, RB.H(x, y) + h, -y];
+RB.U3 = (u, v, h) => { const [x, y] = RB.uv2xy(u, v); return [x, RB.GROUND + h, -y]; };
+const L_ = { gate: ['大門口', 0.3, 34.8, 3.2], chuantang: ['穿堂', 18.5, 18.5, 2.2], office: ['辦公室', 23, 7, 2.0], c4: ['四教（哥姐午休）', 37.3, 7, 2.0], c3: ['三教', 46.7, 7, 2.0], c2: ['二教', 56, 7, 2.0], c1: ['一教', 65.4, 7, 2.0], toilet: ['廁所', 73.6, 7, 2.0],
+  principal: ['校長室（團本部・浴室）', 17.2, 7, 5.6], meeting: ['會議室（早餐・吹風機）', 25.5, 7, 5.6], stairs: ['樓梯', 31.1, 11, 5.6], library: ['圖書室（睡覺・木地板）', 37.3, 7, 5.6], english: ['英語教室（行李）', 46.7, 7, 5.6], c5: ['五教（打呼專用）', 56, 7, 5.6], c6: ['六教', 65.4, 7, 5.6],
+  hall: ['禮堂（風雨教室）', 95, 8.5, 5.0], hallDoor: ['禮堂後門（只走這扇）', 87, 15.2, 1.4], podium: ['司令台', 63, 16.8, 1.6], field: ['草皮操場', 62, 37, 0.5], kinder: ['國幼班（睡覺・脫鞋）', 54.5, 62, 2.4], play: ['遊樂器材（禁止使用）', 85, 59, 2.6], court: ['籃球場', 115, 25, 0.5], storage: ['器材室', 26, 60, 2.2] };
+const LB = (k, extra) => Object.assign({ text: L_[k][0], pos: RB.U3(L_[k][1], L_[k][2], L_[k][3]) }, extra || {});
+RB.makeShots = () => { const W3 = RB.W3, U3 = RB.U3; RB.SHOTS = {
+  s1_valley: { name: '縱谷全景', dur: 12, title: '花蓮縣瑞穗鄉・瑞北社區', sub: '花東縱谷中段，台9線旁', keys: [{ t: 0, p: W3(900, -5200, 2100), l: W3(-100, 600, 0), fov: 42 }, { t: 6, p: W3(600, -2600, 1100), l: W3(-50, 200, 0), fov: 42 }, { t: 12, p: W3(260, -950, 420), l: W3(-20, 40, 0), fov: 42 }],
+    labels: [{ text: '瑞北國小', pos: W3(0, 15, 8), in: 6.5 }, { text: '中央山脈', pos: W3(-9000, 2000, 1800), in: 1.5, out: 9, lift: 0.02 }, { text: '海岸山脈', pos: W3(5200, 1500, 500), in: 2, out: 9, lift: 0.02 }] },
+  s2_community: { name: '瑞北社區', dur: 14, title: '瑞北社區', sub: '學校周邊', keys: [{ t: 0, p: W3(260, -950, 420), l: W3(-20, 40, 0), fov: 42 }, { t: 7, p: W3(-650, -520, 380), l: W3(-60, 60, 0), fov: 42 }, { t: 14, p: W3(-760, 420, 330), l: W3(-60, 40, 0), fov: 42 }],
+    labels: [{ text: '瑞北國小', pos: W3(0, 15, 8), in: 0.3 }, { text: '台9線（中正北路二段）', pos: W3(-82, -120, 1), in: 1.5, out: 12, lift: 0.05 }, { text: '瑞北社區活動中心', pos: W3(-253, 120, 5), in: 5, lift: 0.06 }, { text: '瑞北鐵馬驛站', pos: W3(-172, 326, 4), in: 7.5, lift: 0.06 }, { text: '往瑞穗市區・7-Eleven', pos: W3(-200, -900, 2), in: 2.5, out: 8, lift: 0.05 }] },
+  s3_gate: { name: '大門口', dur: 11, title: '大門口', sub: '從台9線進校門', keys: [{ t: 0, p: W3(-70, 90, 9), l: W3(-62, 20, 2), fov: 55 }, { t: 5, p: W3(-70, 45, 4), l: U3(6, 34.8, 1.8), fov: 55 }, { t: 11, p: U3(-9, 34.8, 2.2), l: U3(20, 25, 2), fov: 55 }], labels: [LB('gate', { in: 2.5 }), LB('chuantang', { in: 7 })] },
+  s4_campus: { name: '校園全景', dur: 14, title: '校園配置', keys: [{ t: 0, p: U3(-35, 70, 55), l: U3(55, 30, 0), fov: 45 }, { t: 7, p: U3(10, 95, 70), l: U3(60, 28, 0), fov: 45 }, { t: 14, p: U3(70, 105, 75), l: U3(62, 26, 0), fov: 45 }],
+    labels: [LB('chuantang', { in: 1 }), { text: '一～四年級教室', pos: U3(51, 7, 7.5), in: 2 }, LB('hall', { in: 3.5 }), LB('field', { in: 5 }), LB('podium', { in: 6 }), LB('kinder', { in: 7.5 }), LB('play', { in: 9 }), LB('court', { in: 10.5 })] },
+  s5_corridor1F: { name: '一樓教室', dur: 15, title: '一樓：穿堂與教室', keys: [{ t: 0, p: U3(12, 40, 4.5), l: U3(19, 14, 2.0), fov: 56 }, { t: 4, p: U3(27, 26, 3.6), l: U3(36, 9, 1.6), fov: 56 }, { t: 10, p: U3(52, 22.5, 3.4), l: U3(62, 9, 1.6), fov: 58 }, { t: 15, p: U3(68, 23, 3.6), l: U3(76, 9, 1.8), fov: 58 }],
+    labels: [LB('chuantang', { in: 0.5, out: 4.5 }), LB('office', { in: 1.5, out: 6 }), LB('c4', { in: 4, out: 9 }), LB('c3', { in: 6, out: 11 }), LB('c2', { in: 8, out: 13 }), LB('c1', { in: 10.5 }), LB('toilet', { in: 12.5 })] },
+  s6_2F: { name: '二樓', dur: 15, title: '二樓：住宿與團本部', keys: [{ t: 0, p: U3(72, 30, 8.5), l: U3(66, 8, 5.4), fov: 54 }, { t: 7, p: U3(46, 31, 9), l: U3(40, 8, 5.4), fov: 54 }, { t: 15, p: U3(18, 31, 9.5), l: U3(16, 8, 5.4), fov: 54 }],
+    labels: [LB('c6', { in: 0.5, out: 5 }), LB('c5', { in: 1.5, out: 7 }), LB('english', { in: 4, out: 10 }), LB('library', { in: 6, out: 12 }), LB('stairs', { in: 9 }), LB('meeting', { in: 10.5 }), LB('principal', { in: 12 })] },
+  s7_kinder: { name: '國幼班', dur: 12, title: '操場對面：國幼班', keys: [{ t: 0, p: U3(63, 22, 6), l: U3(60, 45, 2), fov: 55 }, { t: 6, p: U3(60, 38, 7), l: U3(55, 60, 2), fov: 55 }, { t: 12, p: U3(66, 44, 5), l: U3(70, 60, 2), fov: 55 }], labels: [LB('field', { in: 0.5, out: 6 }), LB('kinder', { in: 3 }), LB('storage', { in: 5 }), LB('play', { in: 7 })] },
+  s8_hall: { name: '禮堂', dur: 12, title: '禮堂（風雨教室）', sub: '吃飯・檢討・營包・早操', keys: [{ t: 0, p: U3(78, 40, 10), l: U3(92, 10, 3), fov: 52 }, { t: 6, p: U3(86, 30, 5), l: U3(92, 12, 3), fov: 52 }, { t: 12, p: U3(82, 30, 3.2), l: U3(88, 14, 2.2), fov: 52 }], labels: [LB('hall', { in: 1 }), LB('hallDoor', { in: 5 })] },
+  s9_out: { name: '拉遠', dur: 10, keys: [{ t: 0, p: U3(82, 30, 3.2), l: U3(88, 14, 2.2), fov: 52 }, { t: 5, p: U3(80, 90, 60), l: U3(60, 30, 0), fov: 48 }, { t: 10, p: U3(60, 180, 180), l: U3(55, 30, 0), fov: 48 }], labels: [{ text: '瑞北國小', pos: U3(60, 30, 10), in: 6 }] },
+};
+  // 互動模式常駐標籤：[文字, 位置, 顯示距離上限, 下限, 是否大標]
+  RB.FREE_LABELS = [['瑞北國小', W3(0, 15, 8), 9000, 180, 1], ['台9線（中正北路二段）', W3(-82, -150, 1), 2500, 120], ['瑞北社區活動中心', W3(-253, 120, 5), 2500, 60], ['瑞北鐵馬驛站', W3(-172, 326, 4), 2500, 60], ['7-Eleven', W3(-215, -939, 4), 3000, 80], ['中央山脈', W3(-9000, 2000, 1800), 40000, 2500, 1], ['海岸山脈', W3(5200, 1500, 500), 40000, 2500, 1]]
+    .concat(Object.keys(L_).map(k => [L_[k][0], RB.U3(L_[k][1], L_[k][2], L_[k][3]), ['principal', 'meeting', 'stairs', 'library', 'english', 'c5', 'c6', 'office', 'c4', 'c3', 'c2', 'c1', 'toilet', 'hallDoor', 'storage'].includes(k) ? 90 : 320, 0]));
+  RB.ORDER = Object.keys(RB.SHOTS);
+};
+function cr(p0, p1, p2, p3, t) { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3); }
+RB.pathAt = (keys, t) => { const n = keys.length; if (t <= keys[0].t) return keys[0]; if (t >= keys[n - 1].t) return keys[n - 1]; let i = 0; while (i < n - 2 && t > keys[i + 1].t) i++; const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(n - 1, i + 2)]; let u = (t - k1.t) / (k2.t - k1.t); u = u * u * (3 - 2 * u) * 0.35 + u * 0.65; const f = a => [0, 1, 2].map(j => cr(k0[a][j], k1[a][j], k2[a][j], k3[a][j], u)); return { p: f('p'), l: f('l'), fov: (k1.fov || 50) + ((k2.fov || 50) - (k1.fov || 50)) * u }; };
+// 影片用：把標籤畫進畫面
+RB.drawLabels = (cg, cam, labels, t, W, H) => { const v = new THREE.Vector3(), fs = Math.round(H * 0.03); cg.save(); cg.textBaseline = 'middle'; cg.font = `700 ${fs}px "Microsoft JhengHei","Noto Sans TC","PingFang TC",sans-serif`;
+  for (const L of labels) { const a = (L.in !== undefined ? Math.min(1, Math.max(0, (t - L.in) / 0.6)) : 1) * (L.out !== undefined ? Math.min(1, Math.max(0, (L.out - t) / 0.6)) : 1); if (a <= 0.01) continue; v.set(...L.pos).project(cam); if (v.z > 1 || v.z < -1) continue; const sx = (v.x * 0.5 + 0.5) * W, sy = (-v.y * 0.5 + 0.5) * H; if (sx < -50 || sx > W + 50 || sy < -50 || sy > H + 50) continue;
+    const ty = sy - (L.lift === undefined ? H * 0.07 : L.lift * H), tw = cg.measureText(L.text).width, pad = fs * 0.45, bh = fs * 1.5; cg.globalAlpha = a; cg.strokeStyle = 'rgba(255,255,255,0.95)'; cg.lineWidth = Math.max(2, H * 0.0025); cg.beginPath(); cg.moveTo(sx, sy); cg.lineTo(sx, ty + bh / 2); cg.stroke(); cg.fillStyle = 'rgba(255,255,255,0.95)'; cg.beginPath(); cg.arc(sx, sy, H * 0.005, 0, Math.PI * 2); cg.fill(); cg.fillStyle = 'rgba(20,28,36,0.78)'; cg.beginPath(); cg.roundRect(sx - tw / 2 - pad, ty - bh / 2, tw + pad * 2, bh, bh * 0.3); cg.fill(); cg.fillStyle = '#fff'; cg.textAlign = 'center'; cg.fillText(L.text, sx, ty + fs * 0.04); }
+  cg.restore(); cg.globalAlpha = 1; };
+RB.drawTitle = (cg, shot, t, W, H) => { if (!shot.title) return; const a = Math.min(1, Math.max(0, (t - 0.4) / 0.8)) * Math.min(1, Math.max(0, (shot.dur - t - 0.2) / 0.8)); if (a <= 0.01) return; const fs = Math.round(H * 0.045); cg.save(); cg.globalAlpha = a; cg.font = `700 ${fs}px "Microsoft JhengHei","Noto Sans TC",sans-serif`; cg.textAlign = 'left'; cg.textBaseline = 'alphabetic'; cg.shadowColor = 'rgba(0,0,0,0.55)'; cg.shadowBlur = H * 0.012; cg.fillStyle = '#fff'; cg.fillText(shot.title, W * 0.05, H * 0.12); if (shot.sub) { cg.font = `500 ${Math.round(fs * 0.55)}px "Microsoft JhengHei","Noto Sans TC",sans-serif`; cg.fillText(shot.sub, W * 0.05, H * 0.12 + fs * 0.9); } cg.restore(); };
+
+/* ================= 9. 互動介面 ================= */
+const canvas = document.getElementById('view'), ls = document.getElementById('ls'), bar = document.querySelector('#prog i');
+const st = (msg, f) => { ls.textContent = msg; if (f !== undefined) bar.style.width = Math.round(f * 100) + '%'; };
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true, logarithmicDepthBuffer: true, powerPreference: 'high-performance' });
+renderer.setPixelRatio(Math.min(devicePixelRatio, RB.LOW ? 1.5 : 2)); renderer.setSize(innerWidth, innerHeight, false); renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap; RB.renderer = renderer;
+const cam = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 1, 80000); RB.cam = cam;
+const controls = new OrbitControls(cam, canvas); controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.495; controls.minDistance = 4; controls.maxDistance = 30000; controls.screenSpacePanning = false;
+let dirty = true, showLabels = true, fly = null, tour = null, exporting = false; controls.addEventListener('change', () => dirty = true);
+addEventListener('resize', () => { if (exporting) return; renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); dirty = true; });
+const labelBox = document.getElementById('labels'); let labelEls = [];
+function setLabels(list) { labelBox.textContent = ''; labelEls = list.map(L => { const d = document.createElement('div'); d.className = 'lb' + (L.big ? ' big' : ''); d.textContent = L.text; labelBox.appendChild(d); return { L, d }; }); }
+const v3 = new THREE.Vector3();
+function updateLabels(t) { const W = innerWidth, H = innerHeight; for (const { L, d } of labelEls) { let a = 1; if (!showLabels) a = 0; else if (L.in !== undefined || L.out !== undefined) a = (L.in !== undefined ? Math.min(1, Math.max(0, (t - L.in) / 0.6)) : 1) * (L.out !== undefined ? Math.min(1, Math.max(0, (L.out - t) / 0.6)) : 1); else { const dist = cam.position.distanceTo(v3.set(...L.pos)); a = dist < L.max && dist > L.min ? 1 : 0; }
+    if (a > 0.01) { v3.set(...L.pos).project(cam); if (v3.z > 1 || v3.z < -1) a = 0; } d.style.opacity = a; if (a > 0.01) { const lift = L.lift !== undefined ? L.lift * H : 18; d.style.transform = `translate(${(v3.x * 0.5 + 0.5) * W}px, ${(-v3.y * 0.5 + 0.5) * H - lift}px) translate(-50%,-100%)`; } } }
+const freeLabels = () => setLabels(RB.FREE_LABELS.map(([text, pos, max, min, big]) => ({ text, pos, max, min, big })));
+function setCam(p, l, fov) { cam.position.set(...p); controls.target.set(...l); cam.fov = fov || 50; cam.updateProjectionMatrix(); }
+function flyTo(shot) { tour = null; const k = shot.keys[shot.keys.length - 1]; fly = { t0: performance.now(), p0: cam.position.toArray(), l0: controls.target.toArray(), f0: cam.fov, p1: k.p, l1: k.l, f1: k.fov || 50 }; freeLabels(); }
+function startTour() { fly = null; tour = { i: 0, t0: performance.now() }; setLabels(RB.SHOTS[RB.ORDER[0]].labels); document.getElementById('tour').classList.add('on'); }
+function stopTour() { tour = null; document.getElementById('tour').classList.remove('on'); freeLabels(); }
+function frame(now) { requestAnimationFrame(frame); if (exporting) return; let t = 0;
+  if (fly) { let u = Math.min(1, (now - fly.t0) / 2200); const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; const lerp = (a, b) => a.map((x, i) => x + (b[i] - x) * e); setCam(lerp(fly.p0, fly.p1), lerp(fly.l0, fly.l1), fly.f0 + (fly.f1 - fly.f0) * e); if (u >= 1) fly = null; dirty = true; }
+  else if (tour) { const sh = RB.SHOTS[RB.ORDER[tour.i]]; t = (now - tour.t0) / 1000; if (t > sh.dur) { tour.i++; tour.t0 = now; if (tour.i >= RB.ORDER.length) { stopTour(); return; } setLabels(RB.SHOTS[RB.ORDER[tour.i]].labels); t = 0; } const k = RB.pathAt(RB.SHOTS[RB.ORDER[tour.i]].keys, t); setCam(k.p, k.l, k.fov); dirty = true; }
+  else controls.update();
+  // 不讓鏡頭鑽進地面
+  const gy = RB.H ? RB.H(cam.position.x, -cam.position.z) + 1.5 : -1e9; if (cam.position.y < gy) { cam.position.y = gy; dirty = true; }
+  if (!dirty) return; dirty = false;
+  RB.sky.position.copy(cam.position); RB.sky.scale.setScalar(50000);
+  const dist = cam.position.distanceTo(controls.target); RB.setShadowFocus(controls.target.x, controls.target.z, Math.max(90, Math.min(1500, dist * 0.9)));
+  renderer.render(RB.scene, cam); updateLabels(t); }
+
+/* ================= 10. 匯出影片（電腦版 Chrome/Edge） ================= */
+async function exportShots(keys, withLabels, msg) {
+  if (typeof VideoEncoder === 'undefined') { msg('這個瀏覽器不支援匯出，請用電腦版 Chrome 或 Edge。'); return; }
+  const { Muxer, ArrayBufferTarget } = await import('https://cdn.jsdelivr.net/npm/mp4-muxer@5/+esm');
+  exporting = true; const W = 1920, H = 1080, fps = 30; renderer.setPixelRatio(1); renderer.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix(); labelBox.style.display = 'none';
+  const comp = new OffscreenCanvas(W, H), cg = comp.getContext('2d');
+  try { for (const key of keys) { const shot = RB.SHOTS[key], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H }, fastStart: 'in-memory' }); let err = null;
+      const enc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => err = e }); enc.configure({ codec: 'avc1.640028', width: W, height: H, bitrate: 16e6, framerate: fps, latencyMode: 'quality' });
+      const N = Math.round(shot.dur * fps);
+      for (let i = 0; i < N; i++) { const t = i / fps, k = RB.pathAt(shot.keys, t); cam.position.set(...k.p); cam.lookAt(...k.l); cam.fov = k.fov; cam.updateProjectionMatrix(); RB.sky.position.copy(cam.position); RB.sky.scale.setScalar(50000);
+        RB.setShadowFocus(k.l[0], k.l[2], Math.max(90, Math.min(1500, Math.hypot(k.p[0] - k.l[0], k.p[1] - k.l[1], k.p[2] - k.l[2]) * 0.9))); renderer.render(RB.scene, cam);
+        cg.drawImage(canvas, 0, 0, W, H); if (withLabels) { RB.drawLabels(cg, cam, shot.labels || [], t, W, H); RB.drawTitle(cg, shot, t, W, H); }
+        const fr = new VideoFrame(comp, { timestamp: Math.round(i * 1e6 / fps), duration: Math.round(1e6 / fps) }); enc.encode(fr, { keyFrame: i % (fps * 2) === 0 }); fr.close(); if (err) throw err;
+        while (enc.encodeQueueSize > 4) await new Promise(r => setTimeout(r, 5)); if (i % 10 === 0) { msg(`${shot.name}：${Math.round(i / N * 100)}%`); await new Promise(r => setTimeout(r, 0)); } }
+      await enc.flush(); mux.finalize(); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })); a.download = `瑞北3D_${String(RB.ORDER.indexOf(key) + 1).padStart(2, '0')}_${shot.name}${withLabels ? '' : '_無標籤'}.mp4`; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
+    msg('完成，影片已下載。'); }
+  catch (e) { msg('匯出失敗：' + e.message); }
+  finally { exporting = false; renderer.setPixelRatio(Math.min(devicePixelRatio, RB.LOW ? 1.5 : 2)); renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); labelBox.style.display = ''; dirty = true; }
+}
+
+/* ================= 11. 啟動 ================= */
+(async () => {
+  try {
+    st('讀取地形', 0.05); await RB.buildHeights();
+    st('讀取道路', 0.2); await RB.loadOSM();
+    await RB.loadOrtho(st);
+    st('描出房屋輪廓', 0.62); await RB.loadBuildings(st);
+    await RB.buildScene(st); RB.makeShots();
+    const pre = document.getElementById('presets'), sel = document.getElementById('expShot');
+    for (const key of RB.ORDER) { const sh = RB.SHOTS[key]; if (key === 's9_out') continue; const b = document.createElement('button'); b.className = 'chip'; b.textContent = sh.name; b.onclick = () => { stopTour(); [...pre.children].forEach(c => c.classList.remove('on')); b.classList.add('on'); flyTo(sh); }; pre.appendChild(b); }
+    sel.innerHTML = '<option value="all">全部（9 段）</option>' + RB.ORDER.map(k => `<option value="${k}">${RB.SHOTS[k].name}</option>`).join('');
+    document.getElementById('tour').onclick = () => tour ? stopTour() : startTour();
+    document.getElementById('lbl').onclick = e => { showLabels = !showLabels; e.target.classList.toggle('on', showLabels); dirty = true; };
+    const exp = document.getElementById('exp'), msg = s => document.getElementById('expMsg').textContent = s;
+    document.getElementById('expBtn').onclick = () => { exp.style.display = exp.style.display === 'block' ? 'none' : 'block'; };
+    document.getElementById('expClose').onclick = () => exp.style.display = 'none';
+    document.getElementById('expGo').onclick = () => { if (exporting) return; stopTour(); const v = sel.value; exportShots(v === 'all' ? RB.ORDER : [v], document.getElementById('expLbl').checked, msg); };
+    const k = RB.SHOTS.s4_campus.keys[0]; setCam(k.p, k.l, k.fov); freeLabels();
+    document.getElementById('loading').remove(); requestAnimationFrame(frame);
+  } catch (e) { st('載入失敗：' + e.message + '（請確認網路，或重新整理）'); console.error(e); }
+})();
+</script>
+</body>
+</html>
