@@ -367,7 +367,7 @@ RB.makeShots = () => { const W3 = RB.W3, U3 = RB.U3; RB.SHOTS = {
   s9_out: { name: '拉遠', dur: 10, keys: [{ t: 0, p: U3(82, 30, 3.2), l: U3(88, 14, 2.2), fov: 52 }, { t: 5, p: U3(80, 90, 60), l: U3(60, 30, 0), fov: 48 }, { t: 10, p: U3(60, 180, 180), l: U3(55, 30, 0), fov: 48 }], labels: [{ text: '瑞北國小', pos: U3(60, 30, 10), in: 6 }] },
 };
   // 互動模式常駐標籤：[文字, 位置, 顯示距離上限, 下限, 是否大標]
-  RB.FREE_LABELS = [['瑞北國小', W3(0, 15, 8), 9000, 180, 1], ['台9線（中正北路二段）', W3(-82, -150, 1), 2500, 120], ['瑞北社區活動中心', W3(-253, 120, 5), 2500, 60], ['瑞北鐵馬驛站', W3(-172, 326, 4), 2500, 60], ['7-Eleven', W3(-215, -939, 4), 3000, 80], ['中央山脈', W3(-9000, 2000, 1800), 40000, 2500, 1], ['海岸山脈', W3(5200, 1500, 500), 40000, 2500, 1]]
+  RB.FREE_LABELS = [['瑞北國小', W3(0, 15, 8), 9000, 180, 1], ['台9線（中正北路二段）', W3(-82, -150, 1), 2500, 120], ['瑞北社區活動中心', W3(-253, 120, 5), 2500, 60], ['瑞北鐵馬驛站', W3(-172, 326, 4), 2500, 60], ['7-Eleven', W3(-215, -939, 4), 3000, 80], ['中央山脈', W3(-9000, 2000, 1800), 40000, 2500, 1, 350], ['海岸山脈', W3(5200, 1500, 500), 40000, 2500, 1, 350]]
     .concat(Object.keys(L_).map(k => [L_[k][0], RB.U3(L_[k][1], L_[k][2], L_[k][3]), ['principal', 'meeting', 'stairs', 'library', 'english', 'c5', 'c6', 'office', 'c4', 'c3', 'c2', 'c1', 'toilet', 'hallDoor', 'storage'].includes(k) ? 90 : 320, 0]));
   RB.ORDER = Object.keys(RB.SHOTS);
 };
@@ -392,12 +392,12 @@ addEventListener('resize', () => { if (exporting) return; renderer.setSize(inner
 const labelBox = document.getElementById('labels'); let labelEls = [];
 function setLabels(list) { labelBox.textContent = ''; labelEls = list.map(L => { const d = document.createElement('div'); d.className = 'lb' + (L.big ? ' big' : ''); d.textContent = L.text; labelBox.appendChild(d); return { L, d }; }); }
 const v3 = new THREE.Vector3();
-function updateLabels(t) { const W = innerWidth, H = innerHeight; for (const { L, d } of labelEls) { let a = 1; if (!showLabels) a = 0; else if (L.in !== undefined || L.out !== undefined) a = (L.in !== undefined ? Math.min(1, Math.max(0, (t - L.in) / 0.6)) : 1) * (L.out !== undefined ? Math.min(1, Math.max(0, (L.out - t) / 0.6)) : 1); else { const dist = cam.position.distanceTo(v3.set(...L.pos)); a = dist < L.max && dist > L.min ? 1 : 0; }
+function updateLabels(t) { const W = innerWidth, H = innerHeight; for (const { L, d } of labelEls) { let a = 1; if (!showLabels) a = 0; else if (L.in !== undefined || L.out !== undefined) a = (L.in !== undefined ? Math.min(1, Math.max(0, (t - L.in) / 0.6)) : 1) * (L.out !== undefined ? Math.min(1, Math.max(0, (L.out - t) / 0.6)) : 1); else { const dist = cam.position.distanceTo(v3.set(...L.pos)); a = dist < L.max && dist > L.min && !(L.alt && cam.position.y < L.alt) ? 1 : 0; }
     if (a > 0.01) { v3.set(...L.pos).project(cam); if (v3.z > 1 || v3.z < -1) a = 0; } d.style.opacity = a; if (a > 0.01) { const lift = L.lift !== undefined ? L.lift * H : 18; d.style.transform = `translate(${(v3.x * 0.5 + 0.5) * W}px, ${(-v3.y * 0.5 + 0.5) * H - lift}px) translate(-50%,-100%)`; } } }
-const freeLabels = () => setLabels(RB.FREE_LABELS.map(([text, pos, max, min, big]) => ({ text, pos, max, min, big })));
+const freeLabels = () => setLabels(RB.FREE_LABELS.map(([text, pos, max, min, big, alt]) => ({ text, pos, max, min, big, alt })));
 function setCam(p, l, fov) { cam.position.set(...p); controls.target.set(...l); cam.fov = fov || 50; cam.updateProjectionMatrix(); }
 function flyTo(shot) { tour = null; const k = shot.keys[shot.keys.length - 1]; fly = { t0: performance.now(), p0: cam.position.toArray(), l0: controls.target.toArray(), f0: cam.fov, p1: k.p, l1: k.l, f1: k.fov || 50 }; freeLabels(); }
-function startTour() { fly = null; tour = { i: 0, t0: performance.now() }; setLabels(RB.SHOTS[RB.ORDER[0]].labels); document.getElementById('tour').classList.add('on'); }
+function startTour() { fly = null; document.querySelectorAll('#presets .chip').forEach(c => c.classList.remove('on')); tour = { i: 0, t0: performance.now() }; setLabels(RB.SHOTS[RB.ORDER[0]].labels); document.getElementById('tour').classList.add('on'); }
 function stopTour() { tour = null; document.getElementById('tour').classList.remove('on'); freeLabels(); }
 function frame(now) { requestAnimationFrame(frame); if (exporting) return; let t = 0;
   if (fly) { let u = Math.min(1, (now - fly.t0) / 2200); const e = u < 0.5 ? 4 * u * u * u : 1 - Math.pow(-2 * u + 2, 3) / 2; const lerp = (a, b) => a.map((x, i) => x + (b[i] - x) * e); setCam(lerp(fly.p0, fly.p1), lerp(fly.l0, fly.l1), fly.f0 + (fly.f1 - fly.f0) * e); if (u >= 1) fly = null; dirty = true; }
