@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>瑞北國小 3D 導覽</title>
+<style>
+:root{ --bg:#10161c; --panel:rgba(16,22,28,.84); --ink:#f3f1ea; --ink-2:#b9c4cc; --line:rgba(255,255,255,.14); --accent:#e0a640; --chip:#1f2a33; --chip-on:#e0a640; --chip-on-ink:#1b1408; }
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC","Microsoft JhengHei","PingFang TC",system-ui,sans-serif;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#view{position:fixed;inset:0;width:100vw;height:100vh;display:block;touch-action:none}
+#ov{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none}
+header{position:fixed;left:0;right:0;top:0;padding:calc(env(safe-area-inset-top) + 10px) 16px 8px;background:linear-gradient(var(--panel),rgba(16,22,28,0));pointer-events:none}
+header h1{margin:0;font-size:18px;letter-spacing:.02em}
+header p{margin:2px 0 0;font-size:12px;color:var(--ink-2)}
+#bar{position:fixed;left:0;right:0;bottom:0;padding:8px 12px calc(env(safe-area-inset-bottom) + 8px);background:var(--panel);border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+#presets{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:6px}
+#presets::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;border:1px solid var(--line);background:var(--chip);color:var(--ink);font:inherit;font-size:13px;padding:7px 12px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.chip.on{background:var(--chip-on);color:var(--chip-on-ink);border-color:var(--chip-on)}
+#ctrl{display:flex;gap:8px;align-items:center;padding-bottom:6px}
+#seek{flex:1;min-width:0;accent-color:var(--accent)}
+#time{font-size:12px;color:var(--ink-2);font-variant-numeric:tabular-nums;min-width:76px;text-align:right}
+#tools{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+#tools .chip{font-size:12px;padding:6px 10px}
+#credit{font-size:10.5px;color:var(--ink-2);margin-left:auto;text-align:right;line-height:1.35}
+#loading{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:var(--bg);z-index:10;padding:16px;text-align:center}
+#loading .t{font-size:20px;font-weight:700}
+#loading .s{font-size:13px;color:var(--ink-2);min-height:1.4em}
+#prog{width:min(320px,80vw);height:6px;background:#26313a;border-radius:3px;overflow:hidden}
+#prog i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+#exp{position:fixed;right:12px;top:64px;width:min(320px,calc(100vw - 24px));background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;display:none;z-index:5}
+#exp h3{margin:0 0 8px;font-size:14px}
+#exp label{display:flex;align-items:center;gap:6px;margin:6px 0}
+#exp select,#exp button{font:inherit;font-size:13px}
+#exp .msg{color:var(--ink-2);margin-top:8px;min-height:1.3em}
+@media (max-width:600px){ #credit{display:none} header p{display:none} }
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<canvas id="ov"></canvas>
+<header><h1>瑞北國小 3D 導覽</h1><p>小人帶路走一遍：選場景播放，或切到自由視角自己拖曳查看</p></header>
+<div id="bar">
+  <div id="presets"></div>
+  <div id="ctrl"><button class="chip" id="play">▶ 播放</button><input type="range" id="seek" min="0" max="1" step="0.01" value="0" aria-label="播放進度"><span id="time">0:00 / 0:00</span></div>
+  <div id="tools">
+    <button class="chip" id="all">▶▶ 全部連播</button>
+    <button class="chip" id="free">自由視角</button>
+    <button class="chip on" id="lbl">字幕・標籤</button>
+    <button class="chip" id="expBtn">匯出影片</button>
+    <div id="credit">影像、建物框：內政部國土測繪中心｜道路：© OpenStreetMap 貢獻者｜地形：Mapzen Terrain Tiles｜人物：three.js 範例 Xbot（Mixamo）</div>
+  </div>
+</div>
+<div id="exp">
+  <h3>匯出影片（1920×1080 MP4）</h3>
+  <label>場景 <select id="expScene"><option value="all">全部</option></select></label>
+  <label>每秒格數 <select id="expFps"><option value="30">30</option><option value="60">60（更順，檔案較大）</option></select></label>
+  <label><input type="checkbox" id="expLbl" checked> 加上字幕與標籤</label>
+  <button class="chip" id="expGo">開始匯出</button> <button class="chip" id="expClose">關閉</button>
+  <div class="msg" id="expMsg">需要電腦版 Chrome／Edge。每段約 1–3 分鐘，完成後自動下載。</div>
+</div>
+<div id="loading"><div class="t">瑞北國小 3D 導覽載入中</div><div id="prog"><i></i></div><div class="s" id="ls">準備中…</div></div>
+<script type="module">
