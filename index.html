@@ -1107,8 +1107,8 @@ RB.makeV2 = () => {
   const hallCam = { mode: 'track', pos: U(97.6, 3.4, 4.4), look: U(87, 12.6, 1.0), track: 0.45, lookH: 0.8, cut: true, indoor: true, fov: 66 };
   const meetCam = { mode: 'track', pos: U(18.6, 3.2, F2 + 2.6), look: U(27.2, 12.4, F2 + 0.8), track: 0.4, lookH: 0.8, cut: true, indoor: true, fov: 66 };
   const prinCam = { mode: 'track', pos: U(13.7, 17.9, FP + 2.35), look: U(19.8, 20.6, FP + 0.7), track: 0.45, lookH: 0.8, cut: true, indoor: true, fov: 68 };
-  const stepCam = { mode: 'track', pos: U(24.0, 16.9, FP + 1.75), look: U(30.8, 15.0, F2 + 0.6), track: 0.5, lookH: 0.8, cut: true, indoor: true, fov: 60 };
-  const passCam = { mode: 'track', pos: U(23.0, 21.6, FP + 2.2), look: U(25.5, 16.4, FP + 0.8), track: 0.55, lookH: 0.8, cut: true, indoor: true, fov: 64 };
+  const stepCam = { mode: 'track', pos: U(21.75, 15.25, FP + 2.45), look: U(30.8, 15.8, F2 + 0.4), track: 0.5, lookH: 0.8, cut: true, indoor: true, fov: 60 };
+  const passCam = { mode: 'track', pos: U(24.1, 15.5, FP + 2.3), look: U(22.6, 20.9, FP + 0.7), track: 0.55, lookH: 0.8, cut: true, indoor: true, fov: 64 };
   const kCam = { mode: 'track', pos: U(75.5, 65.2, 2.9), look: U(58.5, 60.3, 0.6), track: 0.4, lookH: 0.8, cut: true, indoor: true, fov: 64 };
   const kCorr = { mode: 'track', pos: U(53.8, 60.9, 2.7), look: U(33, 59.9, 0.9), track: 0.5, lookH: 0.8, cut: true, indoor: true, fov: 60 };
   const fn = (text, pos, on, o) => Object.assign({ text, pos, on, k: 0.15, fs: 30, color: 'rgba(20,28,36,0.88)' }, o || {});
@@ -1148,10 +1148,10 @@ RB.makeV2 = () => {
     { walk: [{ p: U(29.0, 13.5, F2), cam: meetCam }, U(28.0, 13.3, F2), U(27.0, 12.6, F2)], speed: 1.3, vo: '18', voAt: 0.25, labels: [fn('會議室：早餐・吹風機', U(23.8, 8, F2 + 2.4), '18', { k: 0.05, off: { at: '18' } })] },
     { stop: 0, waitVo: true, pad: 0.2, face: U(23.8, 8.4, F2) },
     // 樓梯口正前方的小樓梯 → 往西 → 往南，右手邊是校長室
-    { walk: [U(28.2, 13.5, F2), U(29.6, 13.7, F2), { p: U(31.0, 14.4, F2), cam: stepCam }, U(31.1, 15.2, F2 + 0.15), U(31.1, 15.6, F2 + 0.3), U(31.0, 16.1, FP), U(30.0, 16.4, FP), U(26.0, 16.3, FP), U(23.4, 16.6, FP), { p: U(23.0, 17.8, FP), cam: passCam }, U(23.0, 19.8, FP), U(22.9, 20.65, FP)], vo: '19', voAt: 0.6, ff: 2.2, speed: 1.4 },
+    { walk: [U(28.2, 13.5, F2), U(29.6, 13.7, F2), { p: U(31.0, 14.4, F2), cam: stepCam }, U(31.1, 15.2, F2 + 0.15), U(31.1, 15.6, F2 + 0.3), U(31.0, 16.1, FP), U(30.0, 16.4, FP), U(26.0, 16.3, FP), U(24.3, 16.6, FP), { p: U(23.5, 17.6, FP), cam: passCam }, U(23.0, 19.8, FP), U(22.9, 20.65, FP)], vo: '19', voAt: 0.6, ff: 2.2, speed: 1.4 },
     { stop: 0.45, face: U(18, 20.65, FP), open: 'prin', openAt: 0.0, doorDur: 0.6 },
     { walk: [{ p: U(21.6, 20.65, FP), cam: prinCam }, U(20.4, 20.65, FP), U(19.5, 20.2, FP)], speed: 1.1,
-      labels: [fn('校長室：團本工作區', U(17.2, 19.5, FP + 2.2), '19', { k: 0.55, color: STAFF, off: 'scene' })] },
+      labels: [fn('校長室：團本工作區', U(17.2, 19.5, FP + 2.2), undefined, { at: 1.3, color: STAFF, off: 'scene' })] },
     { stop: 0.8, waitVo: true, pad: 0.4, face: U(14.4, 19.4, FP) }] };
 
   const B = { key: 'v2b', name: '必修2-國幼班', start: U(25.5, 57.0, F1), yaw0: 1.3, follow: { dist: 3.4, height: 1.9 }, cam0: follow(), labels: [], steps: [
@@ -1160,10 +1160,10 @@ RB.makeV2 = () => {
     { stop: 0.45, face: U(40, 59.95, F1), open: 'kWest', openAt: 0.0, doorDur: 0.6 },
     { walk: [{ p: U(32.8, 59.95, F1), cam: kCorr }, U(40, 59.95, F1), U(50, 59.95, F1), U(53.4, 59.95, F1)], ff: 4.5, speed: 1.5 },
     { stop: 0.45, face: U(60, 59.95, F1), open: 'kIn', openAt: 0.0, doorDur: 0.6 },
-    { walk: [{ p: U(55.0, 59.95, F1), cam: kCam }, U(56.6, 60.3, F1), U(58.2, 61.4, F1)], speed: 1.3, vo: '20', voAt: 0.2, labels: [fn('國幼班：睡覺', U(65, 62, F1 + 2.4), '20', { k: 0.35, color: SLEEP, off: { at: '21', k: 0 } })] },
+    { walk: [U(55.0, 59.95, F1), U(56.6, 60.3, F1), U(58.2, 61.4, F1)], cam: kCam, speed: 1.3, vo: '20', voAt: 0.35, labels: [fn('國幼班：睡覺', U(65, 62, F1 + 2.4), '20', { k: 0.35, color: SLEEP, off: { at: '21', k: 0 } })] },
     { stop: 0, waitVo: true, pad: 0.3, face: U(70, 63, F1) },
-    { aerial: 0, vo: '21', voAt: 0.2, face: U(70, 63, F1), keys: [{ t: 0, p: U(73, 49.5, 4.6), l: U(84.0, 58.2, 1.6), fov: 54 }, { t: 'end', p: U(75, 49.6, 4.4), l: U(84.5, 58.2, 1.6), fov: 54 }],
-      labels: [fn('溜滑梯：小朋友都不能去玩', U(83.5, 58.5, 4.6), '21', { k: 0.1, color: 'rgba(176,64,40,0.95)', fs: 32 })] }] };
+    { aerial: 0, vo: '21', voAt: 0.2, face: U(70, 63, F1), keys: [{ t: 0, p: U(87.2, 50.6, 3.3), l: U(84.3, 58.5, 1.1), fov: 50 }, { t: 'end', p: U(85.8, 51.3, 3.0), l: U(84.3, 58.5, 1.1), fov: 50 }],
+      labels: [fn('溜滑梯：小朋友都不能去玩', U(85.8, 58.5, 1.4), '21', { k: 0.1, color: 'rgba(176,64,40,0.95)', fs: 32, off: 'scene' })] }] };
 
   RB.V2 = [A, B].map(sc => RB.compile(sc));
 };
