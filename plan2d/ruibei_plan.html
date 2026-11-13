@@ -1,0 +1,914 @@
+<title>瑞北國小平面圖</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+TC:wght@400;500;700;900&display=swap">
+<style>
+/* Layout: a drafting table — the drawing sheet fills the left, the review list (blue-pencil questions) docks on the right; on phones the list stacks under the sheet. */
+:root{
+  --paper:#e9eeee; --sheet:#fbfcfb; --ink:#1b2428; --ink2:#56646b; --ink3:#8b979c; --rule:#d3dadb; --field:#ffffff;
+  --poche:#263035; --blue:#2a66a8; --blue-soft:rgba(42,102,168,.10); --blue-ink:#ffffff;
+  --red:#cc3a27; --green:#2b8653; --black:#1b2428; --amber:#b5730c;
+  --t-class:#dfeaf7; --t-sleep:#e9e3f6; --t-staff:#f7ead2; --t-life:#ddefe3; --t-hall:#f0e4de; --t-stage:#eee2cb; --t-danger:#fbe0c6;
+  --grass:#dfecd4; --clay:#efd9c9; --court:#d5e5e1; --road:#dfe3e4; --bld:#cfd7da;
+  --shadow:0 1px 2px rgba(20,32,38,.08),0 6px 20px rgba(20,32,38,.07);
+  --font:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0f1416; --sheet:#151b1e; --ink:#e2e8ea; --ink2:#a0adb3; --ink3:#6f7c82; --rule:#283236; --field:#1b2226;
+  --poche:#c9d3d7; --blue:#6fa8e8; --blue-soft:rgba(111,168,232,.14); --blue-ink:#0f1416;
+  --red:#ff6a55; --green:#58c98a; --black:#e2e8ea; --amber:#e3a33c;
+  --t-class:#1b2938; --t-sleep:#251f3a; --t-staff:#33281a; --t-life:#182d22; --t-hall:#2c221e; --t-stage:#2e2719; --t-danger:#3a2617;
+  --grass:#1a2a1b; --clay:#33231b; --court:#182a27; --road:#20272a; --bld:#2a3337;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0f1416; --sheet:#151b1e; --ink:#e2e8ea; --ink2:#a0adb3; --ink3:#6f7c82; --rule:#283236; --field:#1b2226;
+  --poche:#c9d3d7; --blue:#6fa8e8; --blue-soft:rgba(111,168,232,.14); --blue-ink:#0f1416;
+  --red:#ff6a55; --green:#58c98a; --black:#e2e8ea; --amber:#e3a33c;
+  --t-class:#1b2938; --t-sleep:#251f3a; --t-staff:#33281a; --t-life:#182d22; --t-hall:#2c221e; --t-stage:#2e2719; --t-danger:#3a2617;
+  --grass:#1a2a1b; --clay:#33231b; --court:#182a27; --road:#20272a; --bld:#2a3337;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 20px rgba(0,0,0,.3); color-scheme:dark}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100%}
+@media (min-width:901px){body{height:100%;overflow:hidden}}
+button,textarea,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px;padding-block:14px 10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.top h1{margin:0;font-size:22px;font-weight:900;letter-spacing:.02em;text-wrap:balance}
+.top .meta{margin:2px 0 0;color:var(--ink2);font-size:13px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+.tabs button{border:1px solid var(--rule);background:var(--sheet);padding:6px 12px;border-radius:7px;font-size:14px;font-weight:500;color:var(--ink2)}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--sheet);border-color:var(--ink)}
+.tabs .cnt{font-family:var(--mono);font-size:11px;margin-left:5px;opacity:.75}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;padding-block:0 18px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));flex:1;min-height:0}
+.board{display:flex;flex-direction:column;min-width:0;min-height:0;gap:8px}
+.sheet{position:relative;flex:1;min-height:0;background:var(--sheet);border:1px solid var(--rule);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);touch-action:none}
+.sheet svg{position:absolute;inset:0;width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none}
+.sheet[data-tool="pan"] svg{cursor:grab}.sheet[data-tool="pen"] svg{cursor:crosshair}.sheet[data-tool="text"] svg{cursor:text}.sheet[data-tool="erase"] svg{cursor:cell}
+.tags{position:absolute;inset:0;pointer-events:none}
+.tag{position:absolute;transform:translate(-50%,-50%);pointer-events:auto;min-width:26px;height:26px;padding:0 6px;border-radius:13px;border:2px solid var(--blue);background:var(--sheet);color:var(--blue);font:600 13px/22px var(--mono);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+.tag.on{background:var(--blue);color:var(--blue-ink)}
+.tag.done{border-style:dashed;opacity:.75}
+.note-in{position:absolute;z-index:3;min-width:180px;padding:5px 8px;border:2px solid var(--red);border-radius:6px;background:var(--field);font-size:15px}
+.hint{position:absolute;left:10px;bottom:10px;max-width:calc(100% - 20px);padding:4px 10px;border-radius:6px;background:color-mix(in srgb,var(--sheet) 88%,transparent);border:1px solid var(--rule);font-size:12.5px;color:var(--ink2);pointer-events:none}
+.tools{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:8px;overflow:hidden;background:var(--sheet)}
+.seg button{border:0;background:transparent;padding:7px 12px;font-size:14px;font-weight:500;color:var(--ink2)}
+.seg button+button{border-left:1px solid var(--rule)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--sheet)}
+.sw{display:inline-flex;gap:6px;align-items:center;padding:0 4px}
+.sw button{width:26px;height:26px;border-radius:50%;border:2px solid var(--sheet);box-shadow:0 0 0 1px var(--rule)}
+.sw button[aria-pressed="true"]{box-shadow:0 0 0 2px var(--ink)}
+.sw [data-c="r"]{background:var(--red)}.sw [data-c="g"]{background:var(--green)}.sw [data-c="k"]{background:var(--black)}
+.btn{border:1px solid var(--rule);background:var(--sheet);padding:7px 11px;border-radius:8px;font-size:14px;font-weight:500;color:var(--ink2)}
+.btn:disabled{opacity:.45;cursor:default}
+.save{margin-left:auto;font-size:12.5px;color:var(--ink3)}
+.save[data-s="ro"],.save[data-s="local"],.save[data-s="err"]{color:var(--amber)}
+.panel{min-width:0;overflow:auto;display:flex;flex-direction:column;gap:12px;padding-bottom:8px}
+.intro{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:14px 16px}
+.intro h2{margin:0 0 4px;font-size:17px;font-weight:700}
+.intro p{margin:0;color:var(--ink2);font-size:14px}
+.intro b{color:var(--blue);font-weight:700}
+.prog{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:13px;color:var(--ink2);font-variant-numeric:tabular-nums}
+.prog .bar{flex:1;height:6px;border-radius:3px;background:var(--rule);overflow:hidden}.prog .bar i{display:block;height:100%;width:0;background:var(--blue);transition:width .3s}
+.filters{display:flex;gap:6px;margin-top:10px}
+.filters button{border:1px solid var(--rule);background:transparent;border-radius:14px;padding:2px 11px;font-size:13px;color:var(--ink2)}
+.filters button[aria-pressed="true"]{border-color:var(--blue);color:var(--blue);background:var(--blue-soft)}
+.qs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.q{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;overflow:hidden}
+.q.on{border-color:var(--blue);box-shadow:0 0 0 1px var(--blue)}
+.qh{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:10px 12px;text-align:left}
+.num{display:inline-grid;place-items:center;min-width:26px;height:26px;border-radius:13px;border:2px solid var(--blue);color:var(--blue);font:600 13px var(--mono)}
+.q.on .num{background:var(--blue);color:var(--blue-ink)}
+.qt{font-weight:700;font-size:15px;line-height:1.35}
+.qt small{display:block;font-weight:400;font-size:12px;color:var(--ink3)}
+.st{font-size:12px;padding:1px 8px;border-radius:10px;border:1px solid var(--rule);color:var(--ink3);white-space:nowrap}
+.st[data-s="ok"]{border-color:var(--green);color:var(--green)}
+.st[data-s="fix"]{border-color:var(--red);color:var(--red)}
+.st[data-s="unsure"]{border-color:var(--amber);color:var(--amber)}
+.st[data-s="note"]{border-color:var(--blue);color:var(--blue)}
+.qb{padding:0 14px 14px 48px;display:flex;flex-direction:column;gap:10px}
+.qb .now{margin:0;font-size:14px;color:var(--ink2)}
+.qb .now b{display:block;font-size:12px;letter-spacing:.06em;color:var(--ink3);font-weight:500}
+.qb ul{margin:0;padding-left:18px;font-size:14px}
+.qb ul li::marker{color:var(--blue)}
+.ans{display:flex;flex-wrap:wrap;gap:6px}
+.ans button{border:1px solid var(--rule);background:transparent;border-radius:8px;padding:5px 10px;font-size:13.5px;color:var(--ink2)}
+.ans button[aria-pressed="true"][data-s="ok"]{background:var(--green);border-color:var(--green);color:#fff}
+.ans button[aria-pressed="true"][data-s="fix"]{background:var(--red);border-color:var(--red);color:#fff}
+.ans button[aria-pressed="true"][data-s="unsure"]{background:var(--amber);border-color:var(--amber);color:#fff}
+.qb label{font-size:12px;letter-spacing:.06em;color:var(--ink3)}
+.qb textarea{width:100%;box-sizing:border-box;border:1px solid var(--rule);border-radius:8px;background:var(--field);padding:8px 10px;font-size:14.5px;resize:vertical;min-height:62px}
+.mkc{margin:0;font-size:12.5px;color:var(--ink3)}
+.legend{background:var(--sheet);border:1px solid var(--rule);border-radius:10px;padding:12px 16px}
+.legend h3{margin:0 0 8px;font-size:13px;letter-spacing:.06em;color:var(--ink3);font-weight:500}
+.legend ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;font-size:13px;color:var(--ink2)}
+.legend li{display:flex;align-items:center;gap:8px;min-width:0}
+.legend svg{flex:none;width:34px;height:18px}
+@media (max-width:900px){
+  .wrap{grid-template-columns:minmax(0,1fr);flex:none}
+  .board{height:68svh;min-height:380px}
+  .panel{overflow:visible}
+  .tabs{margin-left:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="top">
+  <div>
+    <h1>瑞北國小平面圖</h1>
+    <p class="meta">依 3D 模型第三版畫的 · 尺寸是估計值 · 藍色編號是待確認的地方</p>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="圖面" id="tabs"></nav>
+</header>
+
+<main class="wrap">
+  <section class="board" aria-label="平面圖">
+    <div class="sheet" id="sheet" data-tool="pan">
+      <svg id="svg" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" role="img" aria-label="平面圖">
+        <defs>
+          <pattern id="hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="hatchl"/></pattern>
+        </defs>
+        <style id="svgcss"></style>
+        <rect id="bg" class="bgsheet" x="-5000" y="-5000" width="20000" height="20000"/>
+        <g id="base"></g><g id="qlayer"></g><g id="marks"></g>
+        <path id="live" class="mk" d=""/>
+      </svg>
+      <div class="tags" id="tags"></div>
+      <div class="hint" id="hint">拖曳移動 · 滾輪或兩指縮放</div>
+    </div>
+    <div class="tools" role="toolbar" aria-label="畫圖工具">
+      <div class="seg" id="toolSeg">
+        <button data-tool="pan" aria-pressed="true" title="移動（V）">移動</button>
+        <button data-tool="pen" aria-pressed="false" title="畫筆（P）">畫筆</button>
+        <button data-tool="text" aria-pressed="false" title="文字（T）">文字</button>
+        <button data-tool="erase" aria-pressed="false" title="擦掉（E）">擦掉</button>
+      </div>
+      <div class="sw" id="sw" aria-label="顏色">
+        <button data-c="r" aria-pressed="true" title="紅"></button><button data-c="g" aria-pressed="false" title="綠"></button><button data-c="k" aria-pressed="false" title="黑"></button>
+      </div>
+      <button class="btn" id="undo" disabled title="復原（Ctrl+Z）">復原</button>
+      <div class="seg"><button id="zin" title="放大" aria-label="放大">＋</button><button id="zout" title="縮小" aria-label="縮小">－</button><button id="zfit">全圖</button></div>
+      <div class="seg" id="dl"><button id="dlPng">下載 PNG</button><button id="dlSvg">SVG</button></div>
+      <span class="save" id="save" data-s="">連線中…</span>
+    </div>
+  </section>
+
+  <aside class="panel" aria-label="待確認">
+    <div class="intro">
+      <h2>要跟你確認的地方</h2>
+      <p>圖上的<b>藍色編號</b>是我不確定的地方。點一題，圖會移過去。按「要改，我畫給你」或選「畫筆」，直接在圖上畫；也可以在題目下面打字。畫的和打的都會自動存起來，我這邊讀得到。</p>
+      <div class="prog"><span id="progT">0 / 0 已回覆</span><span class="bar"><i id="progB"></i></span></div>
+      <div class="filters" id="filters"><button data-f="all" aria-pressed="true">全部</button><button data-f="todo" aria-pressed="false">還沒回的</button></div>
+    </div>
+    <ol class="qs" id="qs"></ol>
+    <div class="legend">
+      <h3>圖例</h3>
+      <ul id="legend"></ul>
+    </div>
+  </aside>
+</main>
+
+<script>
+(() => {
+'use strict';
+// ================= 校地座標 =================
+// u：沿北側圍牆往東（公尺），v：往南（公尺）。原點＝校地西北角。和 3D 模型同一套座標。
+const K = 10, r2 = n => Math.round(n * K * 100) / 100, esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const S = { V0: 2.0, VI: 2.25, V1: 12.2, V2: 15.0, UW: 13, UE: 77, PU: 26, PV: 21 };
+const COLS = [26, 29.5, 32.7, 37.35, 42, 46.75, 51.5, 56.05, 60.6, 65.4, 70.2, 73.4, 77];
+const STAIRS = [29.5, 70.2];
+const NORTH_DEG = -13.7; // 紙面上北方往左偏約 14°
+
+// ================= 繪圖小工具（輸出 SVG 字串，單位：公寸） =================
+let O;
+const reset = () => { O = { tint: [], grid: [], fur: [], thin: [], poche: [], line: [], sym: [], text: [], dim: [] }; };
+const rect = (L, u0, v0, u1, v1, c, ex = '') => O[L].push(`<rect x="${r2(Math.min(u0, u1))}" y="${r2(Math.min(v0, v1))}" width="${r2(Math.abs(u1 - u0))}" height="${r2(Math.abs(v1 - v0))}" class="${c}"${ex}/>`);
+const line = (L, u0, v0, u1, v1, c) => O[L].push(`<line x1="${r2(u0)}" y1="${r2(v0)}" x2="${r2(u1)}" y2="${r2(v1)}" class="${c}"/>`);
+const P = (u, v) => `${r2(u)} ${r2(v)}`;
+const path = (L, d, c) => O[L].push(`<path d="${d}" class="${c}"/>`);
+const circ = (L, u, v, r, c) => O[L].push(`<circle cx="${r2(u)}" cy="${r2(v)}" r="${r2(r)}" class="${c}"/>`);
+const text = (L, u, v, s, size, c, o = {}) => O[L].push(`<text x="${r2(u)}" y="${r2(v)}" font-size="${r2(size)}" class="${c}" text-anchor="${o.a || 'middle'}" dominant-baseline="central"${o.rot ? ` transform="rotate(${o.rot} ${r2(u)} ${r2(v)})"` : ''}>${esc(s)}</text>`);
+const rrect = (L, u0, v0, u1, v1, rr, c) => O[L].push(`<rect x="${r2(u0)}" y="${r2(v0)}" width="${r2(u1 - u0)}" height="${r2(v1 - v0)}" rx="${r2(rr)}" class="${c}"/>`);
+
+// 牆：dir 'H' 沿 u（厚度在 v 方向 c0..c1），'V' 沿 v（厚度在 u 方向）。ops：開口 {a,b,t}
+function wall(dir, c0, c1, a0, a1, ops = []) {
+  const M = (a, c) => dir === 'H' ? [a, c] : [c, a];
+  const box = (a, b, ca, cb, L, cls) => { const p = M(a, ca), q = M(b, cb); rect(L, p[0], p[1], q[0], q[1], cls); };
+  let cur = a0;
+  for (const o of ops.slice().sort((x, y) => x.a - y.a)) { if (o.a > cur) box(cur, o.a, c0, c1, 'poche', 'pc'); opening(M, box, c0, c1, o); cur = Math.max(cur, o.b); }
+  if (a1 > cur) box(cur, a1, c0, c1, 'poche', 'pc');
+}
+function opening(M, box, c0, c1, o) {
+  const cm = (c0 + c1) / 2, w = o.b - o.a;
+  if (o.t === 'win') { box(o.a, o.b, c0, c1, 'sym', 'win'); const p = M(o.a, cm), q = M(o.b, cm); line('sym', p[0], p[1], q[0], q[1], 'hl'); }
+  else if (o.t === 'slide') { const t = Math.max(0.05, Math.min(0.07, (c1 - c0) / 3)); box(o.a, o.a + w * 0.56, cm - t, cm, 'sym', 'leaf'); box(o.b - w * 0.56, o.b, cm, cm + t, 'sym', 'leaf'); }
+  else if (o.t === 'swing') swing(M, o.h === 'b' ? o.b : o.a, o.h === 'b' ? o.a : o.b, o.dir > 0 ? c1 : c0, o.dir, w);
+  else if (o.t === 'dswing') { const m = (o.a + o.b) / 2, f = o.dir > 0 ? c1 : c0; swing(M, o.a, m, f, o.dir, w / 2); swing(M, o.b, m, f, o.dir, w / 2); }
+}
+function swing(M, ha, oa, face, dir, w) {
+  const H = M(ha, face), E = M(ha, face + dir * w), J = M(oa, face);
+  line('sym', H[0], H[1], E[0], E[1], 'leafl');
+  let d = Math.atan2(J[1] - H[1], J[0] - H[0]) - Math.atan2(E[1] - H[1], E[0] - H[0]);
+  while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+  path('sym', `M${P(E[0], E[1])}A${r2(w)} ${r2(w)} 0 0 ${d > 0 ? 1 : 0} ${P(J[0], J[1])}`, 'arc');
+}
+function arrow(L, u0, v0, u1, v1, c = 'arw') {
+  const a = Math.atan2(v1 - v0, u1 - u0), h = 0.45, s = 0.28;
+  path(L, `M${P(u0, v0)}L${P(u1, v1)}M${P(u1 - h * Math.cos(a) + s * Math.sin(a), v1 - h * Math.sin(a) - s * Math.cos(a))}L${P(u1, v1)}L${P(u1 - h * Math.cos(a) - s * Math.sin(a), v1 - h * Math.sin(a) + s * Math.cos(a))}`, c);
+}
+const label = (u, v, name, use, size = 1.25) => { text('text', u, v, name, size, 'tx'); if (use) text('text', u, v + size * 0.62 + 0.45, use, Math.min(0.78, size * 0.62), 'tu'); };
+
+// ================= 家具與設備 =================
+function stairs(s, fl) {
+  const a0 = s + 0.1, am = s + 1.6, b1 = s + 3.1, top = 11.8, land = 8.44, l0 = 6.6;
+  rect('fur', a0, l0, b1, land, 'fu');
+  for (let k = 0; k <= 12; k++) { line('thin', a0, top - k * 0.28, am, top - k * 0.28, 'hl'); line('thin', am, land + k * 0.28, b1, land + k * 0.28, 'hl'); }
+  rect('poche', am - 0.04, land, am + 0.04, top, 'pc');
+  rect('tint', a0, S.VI, b1, l0, 'hatch'); rect('thin', a0, S.VI, b1, l0, 'hl');
+  text('text', s + 1.6, 4.4, '？', 1.1, 'tq');
+  if (fl === 1) { path('sym', `M${P(a0 - 0.1, 10.3)}L${P(a0 + 0.55, 10.05)}L${P(a0 + 0.95, 10.45)}L${P(am + 0.1, 10.0)}`, 'brk'); arrow('sym', (a0 + am) / 2, 11.65, (a0 + am) / 2, 9.0); text('text', (a0 + am) / 2 + 0.05, 11.0, '上', 0.55, 'tu'); }
+  else { arrow('sym', (am + b1) / 2, 11.65, (am + b1) / 2, 8.9); text('text', (am + b1) / 2 + 0.05, 11.0, '下', 0.55, 'tu'); }
+  text('text', s + 1.6, 7.52, '樓梯', 0.6, 'tu');
+}
+function desk(u, v) { rect('fur', u - 0.31, v - 0.23, u + 0.31, v + 0.23, 'fu'); }
+function chair(u, v, w = 0.38) { rect('fur', u - w / 2, v - w / 2, u + w / 2, v + w / 2, 'fu2'); }
+function bag(u, v) { rrect('fur', u - 0.28, v - 0.98, u + 0.28, v + 0.98, 0.28, 'bagf'); }
+function classroom(r, kind) {
+  const { u0, u1 } = r;
+  rect('fur', u1 - 0.2, 4.0, u1 - 0.08, 10.0, 'bk'); text('text', u1 - 0.55, 7.0, '黑板・電視', 0.45, 'tu', { rot: -90 });
+  rect('fur', u1 - 1.9, 2.6, u1 - 0.8, 3.6, 'fu');
+  rect('fur', u0 + 0.12, 3.0, u0 + 0.5, 11.0, 'fu'); for (let v = 3.8; v < 11; v += 0.8) line('thin', u0 + 0.12, v, u0 + 0.5, v, 'hl');
+  text('text', u0 + 0.95, 7.0, '置物櫃・布告欄', 0.42, 'tu', { rot: 90 });
+  if (kind === 'class') {
+    for (const k of [0.3, 0.7]) { const uc = u0 + (u1 - u0) * k, vc = 7.0; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { const u = uc + (i - 1.5) * 0.62; desk(u, vc + (j - 0.5) * 0.46); chair(u, vc + (j ? 0.85 : -0.85)); } }
+    for (let k = 0; k < 6; k++) chair(u0 + 0.85, 3.4 + k * 0.5, 0.32);
+  } else if (kind === 'sleep') {
+    for (let i = 0; i < 12; i++) { const u = u0 + 1.0 + i * 0.64; if (u > u1 - 1.2) break; desk(u, 2.75); desk(u, 3.25); }
+    for (let k = 0; k < 10; k++) bag(u0 + 1.4 + (k % 5) * 1.6, 6.4 + Math.floor(k / 5) * 2.4);
+  } else if (kind === 'english') {
+    for (let i = 0; i < 12; i++) { const u = u0 + 1.0 + i * 0.64; if (u > u1 - 1.2) break; desk(u, 2.75); }
+    for (let k = 0; k < 24; k++) { const u = u0 + 1.2 + (k % 8) * 0.75, v = 5.6 + Math.floor(k / 8) * 1.4; if (k % 3) rect('fur', u - 0.22, v - 0.13, u + 0.22, v + 0.13, 'lug'); else rect('fur', u - 0.16, v - 0.1, u + 0.16, v + 0.1, 'lug'); }
+  }
+}
+function library(r) {
+  const { u0, u1 } = r;
+  for (let k = 0; k < 4; k++) { const u = u0 + 1.3 + k * 1.9; rect('fur', u - 0.9, 2.29, u + 0.9, 2.65, 'fu'); }
+  for (let k = 0; k < 4; k++) { const v = 3.4 + k * 1.9; rect('fur', u1 - 0.51, v - 0.9, u1 - 0.15, v + 0.9, 'fu'); }
+  rect('fur', u0 + 0.1, 3.0, u0 + 0.16, 11.6, 'bk'); text('text', u0 + 0.6, 7.6, '壁畫', 0.42, 'tu', { rot: 90 });
+  for (const u of [u0 + 2.2, u0 + 5.0]) { circ('fur', u, 4.6, 0.75, 'fu'); for (const [du, dv] of [[0.95, 0], [-0.95, 0], [0, 0.95], [0, -0.95]]) chair(u + du, 4.6 + dv, 0.3); }
+  for (let k = 0; k < 8; k++) bag(u0 + 1.4 + (k % 4) * 1.6, 7.7 + Math.floor(k / 4) * 1.9);
+}
+function meeting() {
+  const va = 4.6, vb = 9.6;
+  for (let u = 17.0; u < 26; u += 1.6) { rect('fur', u - 0.8, va - 0.3, u + 0.8, va + 0.3, 'fu'); rect('fur', u - 0.8, vb - 0.3, u + 0.8, vb + 0.3, 'fu'); for (const du of [-0.4, 0.4]) { chair(u + du, va - 0.65); chair(u + du, vb + 0.65); } }
+  for (let v = va + 0.9; v < vb - 0.5; v += 1.6) { rect('fur', 15.6, v - 0.8, 16.2, v + 0.8, 'fu'); chair(15.25, v - 0.35); chair(15.25, v + 0.35); }
+  rect('fur', 13.12, 5.5, 13.26, 7.3, 'bk'); text('text', 13.75, 6.4, '白板', 0.42, 'tu', { rot: 90 });
+  rect('fur', 27.6, 2.27, 29.3, 2.72, 'fu');
+}
+function office() {
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { const u = 15.0 + i * 3.2, v = 5.0 + j * 3.0; rect('fur', u, v, u + 1.4, v + 0.75, 'fu'); chair(u + 0.7, v + 1.15); }
+  rect('fur', 14.0, 2.27, 28.0, 2.72, 'fu');
+}
+function toilet(r) {
+  const { u0, u1 } = r;
+  for (let k = 0; k < 3; k++) line('thin', u0 + 0.5 + k * 1.1, S.VI, u0 + 0.5 + k * 1.1, 4.0, 'ln');
+  line('thin', u0 + 0.5, 4.0, u1 - 0.3, 4.0, 'ln');
+  for (let k = 0; k < 2; k++) { const u = u0 + 1.05 + k * 1.1; rrect('fur', u - 0.2, 2.35, u + 0.2, 2.6, 0.05, 'fu'); O.fur.push(`<ellipse cx="${r2(u)}" cy="${r2(2.95)}" rx="${r2(0.2)}" ry="${r2(0.3)}" class="fu"/>`); }
+  rect('fur', u0 + 0.4, 9.6, u1 - 0.4, 10.2, 'fu'); for (const u of [u0 + 1.1, u0 + 2.5]) O.fur.push(`<ellipse cx="${r2(u)}" cy="${r2(9.9)}" rx="${r2(0.25)}" ry="${r2(0.18)}" class="fu"/>`);
+}
+
+// ================= 房間表（和 3D 模型同一份資料，多了用途） =================
+const ROOMS = [
+  { f: 1, u0: 13, u1: 29.5, name: '辦公室', d: [17.5, 26.6] },
+  { f: 1, u0: 29.5, u1: 32.7, type: 'stairs' },
+  { f: 1, u0: 32.7, u1: 42.0, name: '四年級教室', use: '哥姐休息', tint: 't-staff', kind: 'class', d: [34.2, 40.4] },
+  { f: 1, u0: 42.0, u1: 51.5, name: '三年級教室', use: '小朋友上課', tint: 't-class', kind: 'class', d: [43.5, 49.9] },
+  { f: 1, u0: 51.5, u1: 60.6, name: '二年級教室', use: '小朋友上課', tint: 't-class', kind: 'class', d: [53.0, 59.0] },
+  { f: 1, u0: 60.6, u1: 70.2, name: '一年級教室', use: '小朋友上課', tint: 't-class', kind: 'class', d: [62.1, 68.6] },
+  { f: 1, u0: 70.2, u1: 73.4, type: 'stairs' },
+  { f: 1, u0: 73.4, u1: 77.0, name: '廁所', kind: 'toilet', d: [75.2] },
+  { f: 2, u0: 13, u1: 29.5, name: '會議室', use: '早餐・吹風機', tint: 't-life', kind: 'meeting', d: [17.5, 26.6] },
+  { f: 2, u0: 29.5, u1: 32.7, type: 'stairs' },
+  { f: 2, u0: 32.7, u1: 42.0, name: '圖書室', use: '睡覺・要脫鞋', tint: 't-sleep', kind: 'library', d: [34.2] },
+  { f: 2, u0: 42.0, u1: 51.5, name: '英語教室', use: '放行李', tint: 't-life', kind: 'english', d: [43.5, 49.9] },
+  { f: 2, u0: 51.5, u1: 60.6, name: '五年級教室', use: '睡覺（打呼的人）', tint: 't-sleep', kind: 'sleep', d: [53.0, 59.0] },
+  { f: 2, u0: 60.6, u1: 70.2, name: '六年級教室', use: '睡覺', tint: 't-sleep', kind: 'sleep', d: [62.1, 68.6] },
+  { f: 2, u0: 70.2, u1: 73.4, type: 'stairs' },
+  { f: 2, u0: 73.4, u1: 77.0, name: '廁所？', kind: 'toilet', d: [75.2] },
+];
+
+// ================= 北排教室大樓（一樓、二樓） =================
+function northRow(fl) {
+  const rooms = ROOMS.filter(r => r.f === fl);
+  for (const r of rooms) if (r.tint) rect('tint', r.u0, S.VI, r.u1, S.V1, r.tint);
+  // 北外牆：每間教室整排大窗，樓梯間高窗
+  const ops = [];
+  for (const r of rooms.filter(r => r.type !== 'stairs')) for (let a = r.u0 + 0.6; a < r.u1 - 1.0; a += 2.3) ops.push({ a, b: Math.min(a + 1.9, r.u1 - 0.5), t: 'win' });
+  for (const s of STAIRS) ops.push({ a: s + 0.6, b: s + 2.6, t: 'win' });
+  wall('H', S.V0, S.VI, S.UW - 0.25, S.UE + 0.25, ops);
+  wall('V', S.UW - 0.25, S.UW, S.V0, S.V1, [{ a: 4.2, b: 6.4, t: 'win' }, { a: 7.6, b: 9.8, t: 'win' }]);
+  wall('V', S.UE, S.UE + 0.25, S.V0, S.V1);
+  // 走廊側牆：門＋高窗；隔間
+  for (const r of rooms) {
+    if (r.type === 'stairs') { wall('V', r.u0 - 0.1, r.u0 + 0.1, S.VI, S.V1 - 0.2); wall('V', r.u1 - 0.1, r.u1 + 0.1, S.VI, S.V1 - 0.2); stairs(r.u0, fl); continue; }
+    const o = [];
+    for (const d of r.d || []) o.push({ a: d - 0.55, b: d + 0.55, t: 'slide' });
+    for (let a = r.u0 + 0.4; a < r.u1 - 1.2; a += 2.0) { const b = Math.min(a + 1.6, r.u1 - 0.4); if (!(r.d || []).some(d => b > d - 0.75 && a < d + 0.75)) o.push({ a, b, t: 'win' }); }
+    wall('H', S.V1 - 0.2, S.V1, r.u0, r.u1, o);
+    if (r.u0 > S.UW && !(fl === 2 && r.u0 === 42)) wall('V', r.u0 - 0.1, r.u0 + 0.1, S.VI, S.V1 - 0.2);
+    if (r.kind === 'class' || r.kind === 'sleep' || r.kind === 'english') classroom(r, r.kind);
+    if (r.kind === 'library') library(r);
+    if (r.kind === 'meeting') meeting();
+    if (r.kind === 'toilet') toilet(r);
+    if (r.name === '辦公室') office();
+    // 標字
+    const lu = (r.u0 + r.u1) / 2;
+    if (r.kind === 'library') label(lu, 10.75, r.name, r.use, 1.05);
+    else if (r.kind === 'meeting') label(21.4, 6.6, r.name, r.use, 1.25);
+    else if (r.name === '辦公室') label(21.4, 3.75, r.name, '', 1.15);
+    else if (r.kind === 'toilet') label(lu, 6.6, r.name, '', 0.9);
+    else label(lu, 4.25, r.name, r.use, 1.15);
+  }
+  if (fl === 2) { // 圖書室和英語教室之間是布簾
+    let d = `M${P(42, S.VI)}`; for (let v = S.VI, k = 0; v < S.V1 - 0.2; v += 0.35, k++) d += `L${P(42 + (k % 2 ? 0.12 : -0.12), Math.min(v + 0.35, S.V1 - 0.2))}`;
+    path('sym', d, 'curt'); text('text', 42.55, 11.2, '布簾', 0.45, 'tu', { rot: 90 });
+  }
+  // 走廊、柱子
+  for (const u of COLS) rect('poche', u - 0.22, S.V2 - 0.45, u + 0.22, S.V2, 'pc');
+  text('text', 55.0, 13.55, fl === 1 ? '走廊' : '二樓走廊', 0.7, 'tu');
+  if (fl === 1) {
+    line('line', 26, S.V2, S.UE, S.V2, 'hl');
+    // 穿堂：開放空間，上方是校長室
+    rect('tint', S.UW, S.V1, S.PU, S.PV, 't-hall');
+    for (const [u, v] of [[13.3, 20.7], [17.6, 20.7], [21.8, 20.7], [25.7, 20.7], [13.3, 17.6], [25.7, 17.6]]) rect('poche', u - 0.28, v - 0.28, u + 0.28, v + 0.28, 'pc');
+    rect('thin', S.UW, S.V2, S.PU, S.PV, 'hd');
+    label(19.5, 16.6, '穿堂', '送小朋友回家・大合照', 1.15);
+  } else {
+    // 外側：女兒牆＋欄杆；圖書室到英語教室這段是整排窗；兩道透明門
+    wall('H', S.V2 - 0.15, S.V2, 26, S.UE, [{ a: 32.7, b: 51.5, t: 'win' }]);
+    for (const ug of [32.7, 51.5]) wall('V', ug - 0.05, ug + 0.05, S.V1, S.V2 - 0.15, [{ a: S.V1 + 0.12, b: S.V2 - 0.27, t: 'dswing', dir: 1 }]);
+    text('text', 33.9, 14.45, '透明門', 0.42, 'tu'); text('text', 52.7, 14.45, '透明門', 0.42, 'tu');
+    // 校長室（穿堂正上方）
+    rect('tint', S.UW, S.V2 + 0.2, S.PU, S.PV - 0.25, 't-staff');
+    wall('H', S.V2, S.V2 + 0.2, S.UW, S.PU, [{ a: 24.05, b: 25.15, t: 'swing', h: 'b', dir: 1 }, { a: 15.0, b: 16.6, t: 'win' }, { a: 19.4, b: 21.0, t: 'win' }]);
+    wall('H', S.PV - 0.25, S.PV, S.UW - 0.25, S.PU, [{ a: 14.6, b: 16.8, t: 'win' }, { a: 18.6, b: 20.8, t: 'win' }, { a: 22.6, b: 24.8, t: 'win' }]);
+    wall('V', S.UW - 0.25, S.UW, S.V2, S.PV, [{ a: 16.0, b: 19.6, t: 'win' }]);
+    wall('V', S.PU - 0.25, S.PU, S.V2, S.PV);
+    wall('H', 18.0, 18.12, S.UW, 17.0, [{ a: 15.6, b: 16.5, t: 'swing', h: 'a', dir: -1 }]); wall('V', 16.95, 17.07, 18.0, S.PV - 0.25);
+    rect('tint', S.UW, 18.12, 16.95, S.PV - 0.25, 'hatch2'); text('text', 15.0, 19.5, '浴室', 0.62, 'tu');
+    rect('fur', 17.6, 15.4, 20.4, 16.4, 'fu'); rect('fur', 18.2, 16.8, 19.8, 17.6, 'fu'); rect('fur', 19.6, 19.2, 21.6, 20.0, 'fu'); chair(20.6, 18.6); rect('fur', 22.0, 20.35, 25.6, 20.73, 'fu');
+    label(23.6, 16.9, '校長室', '團本工作區・浴室', 0.95);
+    // 西側陽台
+    rect('poche', 11.8, S.V1, 11.95, S.PV, 'pc'); rect('poche', 11.8, S.PV - 0.15, S.UW - 0.25, S.PV, 'pc');
+    text('text', 12.4, 16.6, '陽台', 0.5, 'tu', { rot: -90 });
+  }
+}
+function dims(fl) {
+  const ticks = [13, 29.5, 32.7, 42, 51.5, 60.6, 70.2, 73.4, 77].concat(fl === 1 ? [84.8, 105] : []);
+  const vD = -1.3, vD2 = -2.9;
+  for (const u of ticks) { line('dim', u, 1.6, u, vD - 0.5, 'hl'); path('dim', `M${P(u - 0.22, vD + 0.22)}L${P(u + 0.22, vD - 0.22)}`, 'tick'); }
+  line('dim', ticks[0], vD, ticks[ticks.length - 1], vD, 'hl');
+  for (let i = 0; i < ticks.length - 1; i++) text('dim', (ticks[i] + ticks[i + 1]) / 2, vD - 0.55, Math.round((ticks[i + 1] - ticks[i]) * 100), 0.62, 'dm');
+  const ov = fl === 1 ? [13, 77, 105] : [13, 77];
+  for (const u of ov) { line('dim', u, vD - 0.5, u, vD2 - 0.4, 'hl'); path('dim', `M${P(u - 0.22, vD2 + 0.22)}L${P(u + 0.22, vD2 - 0.22)}`, 'tick'); }
+  line('dim', ov[0], vD2, ov[ov.length - 1], vD2, 'hl');
+  for (let i = 0; i < ov.length - 1; i++) text('dim', (ov[i] + ov[i + 1]) / 2, vD2 - 0.55, Math.round((ov[i + 1] - ov[i]) * 100), 0.66, 'dm');
+  // 柱線編號
+  const ax = [13].concat(COLS);
+  ax.forEach((u, i) => { line('grid', u, -4.3, u, fl === 1 ? 22 : 15.6, 'axl'); circ('dim', u, -5.0, 0.7, 'axc'); text('dim', u, -5.0, i + 1, 0.66, 'axt'); });
+  // 南北向尺寸
+  const vt = [2, 12.2, 15, 21], uD = 10.4;
+  for (const v of vt) { line('dim', 11.6, v, uD - 0.5, v, 'hl'); path('dim', `M${P(uD - 0.22, v + 0.22)}L${P(uD + 0.22, v - 0.22)}`, 'tick'); }
+  line('dim', uD, vt[0], uD, vt[vt.length - 1], 'hl');
+  for (let i = 0; i < vt.length - 1; i++) text('dim', uD - 0.6, (vt[i] + vt[i + 1]) / 2, Math.round((vt[i + 1] - vt[i]) * 100), 0.62, 'dm', { rot: -90 });
+  ['A', 'B', 'C', 'D'].forEach((n, i) => { line('grid', 8.6, vt[i], 13, vt[i], 'axl'); circ('dim', 7.9, vt[i], 0.7, 'axc'); text('dim', 7.9, vt[i], n, 0.66, 'axt'); });
+}
+function hall1() { // 廁所東側通道＋禮堂
+  rect('thin', 77.25, S.V0, 84.8, S.V2, 'hd'); text('text', 81.0, 7.2, '有屋頂的通道？', 0.62, 'tu');
+  const u0 = 84.8, u1 = 105, wi = 0.25;
+  rect('tint', u0 + wi, S.V0 + wi, 99.4, S.V2 - wi, 't-life');
+  const wn = [], ws = [];
+  for (let a = u0 + 3.5; a < u1 - 6; a += 3.4) { wn.push({ a, b: a + 1.8, t: 'win' }); if (a > u0 + 5) ws.push({ a, b: a + 1.8, t: 'win' }); }
+  ws.push({ a: u0 + 2.0, b: u0 + 4.0, t: 'dswing', dir: 1 });
+  wall('H', S.V0, S.V0 + wi, u0, u1, wn); wall('H', S.V2 - wi, S.V2, u0, u1, ws);
+  wall('V', u0, u0 + wi, S.V0, S.V2, [{ a: 7.6, b: 9.4, t: 'dswing', dir: -1 }]); wall('V', u1 - wi, u1, S.V0, S.V2);
+  text('text', u0 + 3.0, 16.1, '後門（只走這扇）', 0.5, 'tu');
+  // 舞台與兩側小房間
+  rect('tint', 99.5, 5.0, u1 - wi, 12.0, 't-stage'); rect('line', 99.5, 5.0, u1 - wi, 12.0, 'ln');
+  for (let v = 5.4; v < 12; v += 0.6) line('thin', 103.9, v, 104.3, v + 0.3, 'hl');
+  label(102.0, 8.0, '舞台', '', 0.95);
+  for (const [va, vb, vw, nm] of [[S.V0 + wi, 4.9, 5.0, '庶務'], [12.1, S.V2 - wi, 12.0, '電源']]) {
+    wall('H', vw - 0.1, vw + 0.1, 99.5, u1 - wi);
+    const m = (va + vb) / 2; wall('V', 99.4, 99.6, va, vb, [{ a: m - 0.5, b: m + 0.5, t: 'swing', h: 'a', dir: -1 }]);
+    text('text', 102.2, m, nm, 0.55, 'tu');
+  }
+  for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const uc = 88.2 + i * 3.6, vc = 5.6 + j * 4.4; rect('fur', uc - 1.2, vc - 0.8, uc + 1.2, vc + 0.8, 'fu'); for (const du of [-0.9, -0.3, 0.3, 0.9]) { chair(uc + du, vc - 1.15, 0.36); chair(uc + du, vc + 1.15, 0.36); } }
+  label(91.9, 7.55, '禮堂（風雨教室）', '吃飯・檢討・營包・早操', 0.95);
+}
+function titleBlock(u0, v0, name, sub) {
+  const w = 20, h = 7.6;
+  rect('dim', u0, v0, u0 + w, v0 + h, 'tbx'); line('dim', u0, v0 + 2.6, u0 + 14.6, v0 + 2.6, 'hl'); line('dim', u0 + 14.6, v0, u0 + 14.6, v0 + h, 'hl');
+  text('dim', u0 + 0.8, v0 + 1.35, name, 1.15, 'tx', { a: 'start' });
+  text('dim', u0 + 0.8, v0 + 3.45, sub || '花蓮縣瑞北國民小學', 0.62, 'tu', { a: 'start' });
+  text('dim', u0 + 0.8, v0 + 4.45, '單位 cm・尺寸為估計值', 0.55, 'tu', { a: 'start' });
+  text('dim', u0 + 0.8, v0 + 5.35, '依 3D 模型第三版・2026-11-13', 0.55, 'tu', { a: 'start' });
+  // 比例尺 0–5–10 m
+  const sv = v0 + 6.6, su = u0 + 0.8; rect('dim', su, sv - 0.18, su + 5, sv + 0.18, 'sbf'); rect('dim', su + 5, sv - 0.18, su + 10, sv + 0.18, 'sbe');
+  for (const [k, t] of [[0, '0'], [5, '5'], [10, '10 m']]) text('dim', su + k + (k === 10 ? 0.25 : 0), sv - 0.62, t, 0.45, 'dm', { a: k === 10 ? 'start' : 'middle' });
+  // 指北針
+  const cu = u0 + 17.3, cv = v0 + 3.6; circ('dim', cu, cv, 1.75, 'nac');
+  O.dim.push(`<g transform="rotate(${NORTH_DEG} ${r2(cu)} ${r2(cv)})"><path d="M${P(cu, cv - 1.55)}L${P(cu + 0.55, cv + 0.9)}L${P(cu, cv + 0.45)}L${P(cu - 0.55, cv + 0.9)}Z" class="naf"/><text x="${r2(cu)}" y="${r2(cv - 2.35)}" font-size="${r2(0.75)}" class="tx" text-anchor="middle" dominant-baseline="central">N</text></g>`);
+}
+
+// ================= 各圖面 =================
+function drawF1() { reset(); northRow(1); hall1(); dims(1); titleBlock(85.5, 17.3, '一樓平面圖'); return O; }
+function drawF2() { reset(); northRow(2); dims(2); titleBlock(57.0, 17.3, '二樓平面圖'); return O; }
+function drawSouth() {
+  reset();
+  rect('tint', 20, 49, 98, 54, 'grass'); text('text', 60, 51.4, '操場', 0.9, 'tu');
+  rect('thin', 19.8, 49, 24.2, 55, 'hd'); text('text', 22.0, 51.5, '風雨走廊', 0.5, 'tu', { rot: -90 });
+  // 器材室
+  wall('H', 55.5, 55.7, 20, 32, [{ a: 25, b: 26.8, t: 'dswing', dir: -1 }]); wall('H', 63.8, 64.0, 20, 32); wall('V', 20, 20.2, 55.5, 64); wall('V', 31.8, 32, 55.5, 64);
+  rect('fur', 20.2, 63.0, 31.8, 63.8, 'fu'); label(26, 59.6, '器材室', '', 1.05); text('text', 20.75, 59.8, '彩繪山牆', 0.42, 'tu', { rot: 90 });
+  // 國幼班
+  const u0 = 32, u1 = 77, vC = 58.5, vB = 66;
+  rect('tint', u0 + 0.2, vC + 0.2, 54.4, vB - 0.2, 't-sleep'); rect('tint', 54.6, vC + 0.2, u1 - 0.2, vB - 0.2, 't-sleep');
+  const ops = [{ a: 39.45, b: 40.55, t: 'slide' }, { a: 61.45, b: 62.55, t: 'slide' }];
+  for (let a = 34; a < u1 - 2; a += 2.6) if (!ops.some(o => a + 1.6 > o.a - 0.3 && a < o.b + 0.3)) ops.push({ a, b: a + 1.6, t: 'win' });
+  wall('H', vC, vC + 0.2, u0, u1, ops); wall('H', vB - 0.2, vB, u0, u1); wall('V', u0, u0 + 0.2, vC, vB); wall('V', u1 - 0.2, u1, vC, vB); wall('V', 54.4, 54.6, vC + 0.2, vB - 0.2);
+  for (let u = u0; u <= u1 + 0.01; u += 3.2) rect('poche', u - 0.15, 56, u + 0.15, 56.3, 'pc');
+  line('line', u0, 56, u1, 56, 'hl'); text('text', 47.2, 57.3, '走廊（有屋頂）', 0.55, 'tu');
+  for (let i = 0; i < 17; i++) for (let j = 0; j < 4; j++) rect('fur', u0 + 0.8 + i * 1.2, vC + 1.6 + j * 1.2, u0 + 2.0 + i * 1.2, vC + 2.8 + j * 1.2, 'mat');
+  rect('fur', 57, 61.5, 61.5, 62.5, 'fu'); rect('fur', 40.8, vC + 0.3, 42.6, vC + 0.6, 'fu');
+  label(43.3, 62.3, '國幼班', '睡覺・要脫鞋', 1.15); label(65.7, 62.3, '國幼班？', '睡覺・要脫鞋', 1.15);
+  // 遊樂器材
+  rect('tint', 79.2, 54.8, 93.4, 61.2, 't-danger'); rect('thin', 79.2, 54.8, 93.4, 61.2, 'hd');
+  rect('fur', 80.5, 57.0, 83.5, 60.0, 'fu'); path('fur', `M${P(83.5, 58.1)}L${P(87.7, 58.1)}L${P(87.7, 58.9)}L${P(83.5, 58.9)}`, 'fu');
+  for (const u of [88.5, 92.5]) line('fur', u, 55.6, u, 57.6, 'ln'); line('fur', 88.4, 56.6, 92.6, 56.6, 'ln');
+  label(86.3, 59.3, '遊樂器材區', '小朋友都不能過去', 0.85);
+  titleBlock(78.0, 63.0, '國幼班・器材室平面圖');
+  return O;
+}
+function drawSite() {
+  reset();
+  rect('tint', -17, -6, -6.5, 74, 'road'); text('text', -11.7, 34, '台9線（中正北路二段）', 1.4, 'tu', { rot: -90 });
+  rect('tint', -6.5, 29, 0.6, 40, 'road');
+  rect('tint', 26, 24, 98, 54, 'grass'); rect('tint', 26, 18.7, 103, 24, 'clay'); rect('tint', 106, 6, 124, 44, 'court');
+  for (const [a, b, c, d] of [[107, 25, 123, 25], [107, 8, 107, 42], [123, 8, 123, 42], [107, 8, 123, 8], [107, 42, 123, 42]]) line('thin', a, b, c, d, 'hl');
+  circ('thin', 115, 25, 1.8, 'hl');
+  rect('thin', 26, 24, 98, 54, 'hl'); rect('thin', 26, 18.7, 103, 24, 'hl');
+  // 足球場線（示意）
+  rect('thin', 30, 27, 94, 51, 'hd2'); line('thin', 62, 27, 62, 51, 'hd2'); circ('thin', 62, 39, 4.5, 'hd2'); rect('thin', 30, 33, 36, 45, 'hd2'); rect('thin', 88, 33, 94, 45, 'hd2');
+  // 建物
+  const B = (u0, v0, u1, v1, cls = 'bld') => { rect('poche', u0, v0, u1, v1, cls); };
+  B(13, 2, 77, 15); B(13, 15, 26, 21); B(84.8, 2, 105, 15); B(20, 55.5, 32, 64); B(32, 56, 77, 66); B(58, 15, 68, 18.6);
+  rect('thin', 77, 2, 84.8, 15, 'hd');
+  for (const [a, b, c, d] of [[2.5, 45, 7, 62], [3, 62, 17, 66.5], [99, 46.5, 112, 58.5], [100.5, 60.5, 114.5, 68]]) { rect('tint', a, b, c, d, 'hatch'); rect('thin', a, b, c, d, 'ln'); text('text', (a + c) / 2, (b + d) / 2, '？', 1.6, 'tq'); }
+  rect('tint', 79.2, 54.8, 93.4, 61.2, 't-danger'); rect('thin', 79.2, 54.8, 93.4, 61.2, 'hd');
+  rect('thin', 19.8, 21, 24.2, 55.5, 'hd');
+  // 圍牆、大門、旗桿
+  rect('line', 0, 0, 126, 64.6, 'fence');
+  rect('poche', -0.6, 31.4, 0.6, 32.6, 'pc'); rect('poche', -0.6, 37.2, 0.6, 38.4, 'pc'); line('sym', 0.1, 27.9, 0.1, 31.4, 'gate');
+  for (const u of [8.5, 10.5]) circ('sym', u, 22.5, 0.35, 'pcc');
+  // 標字
+  label(45, 6.4, '北排教室大樓', '一樓教室・二樓睡覺', 1.5); text('text', 19.5, 18.0, '穿堂', 0.9, 'tx');
+  label(94.9, 6.6, '禮堂', '', 1.4); text('text', 81, 8.5, '通道', 0.75, 'tu');
+  text('text', 63, 16.8, '司令台', 0.75, 'tx'); text('text', 9.5, 24.3, '旗桿', 0.65, 'tu');
+  text('text', 64.5, 21.35, '跑道', 0.85, 'tu'); label(62, 38.2, '操場', '中間是足球場', 1.8);
+  label(115, 16.5, '籃球場', '', 1.4);
+  label(54.5, 61.6, '國幼班', '睡覺', 1.3); text('text', 26, 59.8, '器材室', 0.95, 'tx'); text('text', 86.3, 58.0, '遊樂器材', 0.8, 'tx');
+  text('text', 22, 38, '風雨走廊', 0.7, 'tu', { rot: -90 });
+  text('text', 3.2, 34.9, '大門', 1.0, 'tx'); text('text', 3.4, 36.4, '遊覽車停這邊', 0.55, 'tu');
+  text('text', 63, -1.6, '校地約 126 × 65 m', 0.75, 'dm');
+  titleBlock(103.5, 69.4, '校園配置圖');
+  return O;
+}
+const VIEWS = {
+  site: { name: '校園配置', box: [-18, -4, 130, 77.6], draw: drawSite },
+  f1: { name: '一樓', box: [6, -6.4, 107, 25.6], draw: drawF1 },
+  f2: { name: '二樓', box: [6, -6.4, 79, 25.6], draw: drawF2 },
+  south: { name: '國幼班・器材室', box: [17.5, 48.5, 99, 71.5], draw: drawSouth },
+};
+const VIEW_ORDER = ['f1', 'f2', 'south', 'site'];
+
+// ================= 待確認的題目 =================
+const QS = [
+  { id: 'q01', view: 'f1', box: [32.4, 9.6, 70.5, 15.3], tag: [36.2, 13.6], title: '一到四年級教室的門', now: '每間 2 扇，都在走廊那面牆，離教室兩端各約 1.5 公尺，寬約 110 公分。先畫成拉門。', ask: ['每間有幾扇門？', '門在前面（黑板那端）還是後面？', '是拉門，還是往內／往外推的門？'] },
+  { id: 'q02', view: 'f1', box: [51.3, 1.8, 60.8, 12.4], tag: [52.6, 10.9], title: '教室裡面怎麼擺（以二年級教室為例）', now: '黑板和電視在東牆，老師桌在黑板旁；後面（西牆）是布告欄和藍色置物櫃。營期間桌子併成兩大桌，每桌 8 人；後面有摺疊小椅子。', ask: ['黑板在哪一面牆？', '營期間桌椅怎麼排、小朋友坐哪？', '一、二、三年級教室擺法一樣嗎？'] },
+  { id: 'q03', view: 'f1', box: [32.5, 1.8, 42.2, 12.4], tag: [33.8, 10.9], title: '四年級教室（哥姐休息）', now: '跟其他教室一樣擺。', ask: ['哥姐休息時桌椅怎麼排？', '哥姐的包包、東西放哪？'] },
+  { id: 'q04', view: 'f1', box: [12.7, 1.8, 32.9, 12.4], tag: [31.1, 4.0], title: '辦公室和西邊的樓梯', now: '辦公室兩扇門對著穿堂。樓梯從走廊往北上半層，在北邊轉平台，再往南上到二樓。平台北邊那塊不知道是什麼。', ask: ['樓梯是這個方向嗎？', '平台北邊那塊是什麼（儲藏室？）', '辦公室的門在哪？'] },
+  { id: 'q05', view: 'f1', box: [70.0, 1.8, 77.3, 12.4], tag: [71.8, 4.0], title: '東邊的樓梯和一樓廁所', now: '樓梯和西邊一樣。廁所只畫了一扇門在走廊，裡面兩間、洗手台在南邊。', ask: ['男女廁分開嗎？各在哪？', '廁所門在哪？', '洗手台在哪？'] },
+  { id: 'q06', view: 'f1', box: [77.2, 1.8, 84.9, 15.2], tag: [81.0, 10.6], title: '廁所和禮堂中間', now: '先畫成有屋頂、兩邊沒有牆的通道。', ask: ['這裡實際上是什麼？', '從走廊怎麼走到禮堂？'] },
+  { id: 'q07', view: 'f1', box: [84.6, 1.8, 105.2, 15.2], tag: [86.3, 3.4], title: '禮堂的門和舞台', now: '西牆中間一扇門（廁所那側），南牆靠西一扇後門（只走這扇）。舞台在東邊，舞台兩側各一間小房間（北：庶務，南：電源）。', ask: ['禮堂有幾扇門、在哪？', '舞台在哪一邊？', '兩間小房間的門在哪？'] },
+  { id: 'q08', view: 'f1', box: [85.1, 2.3, 99.4, 14.7], tag: [96.6, 13.1], title: '禮堂營期間怎麼擺', now: '6 張小隊桌（3 排 × 2），每桌 8 張摺疊椅。', ask: ['吃飯時桌椅怎麼排？', '檢討、營包、早操時呢？（畫最常用的一種就好）'] },
+  { id: 'q09', view: 'f2', box: [70.0, 1.8, 77.3, 12.4], tag: [75.2, 4.8], title: '二樓有沒有廁所', now: '先照一樓畫：二樓東邊樓梯旁有廁所。', ask: ['二樓有沒有廁所？', '有的話是男廁、女廁，還是都有？'] },
+  { id: 'q10', view: 'f2', box: [12.7, 1.8, 29.7, 12.4], tag: [14.2, 3.3], title: '會議室', now: '兩扇門對著走廊；ㄇ字形會議桌，開口朝東；白板在西牆。', ask: ['門在哪？', '早餐時桌子怎麼排？', '吹風機（插座）在哪？'] },
+  { id: 'q11', view: 'f2', box: [12.7, 14.8, 26.2, 21.2], tag: [14.3, 16.0], title: '校長室（團本部）和浴室', now: '門在北牆，對著會議室；浴室在西邊，門朝北；裡面有沙發、辦公桌、櫃子。', ask: ['校長室的門在哪？', '浴室在哪、門朝哪？', '團本工作的桌子在哪？'] },
+  { id: 'q12', view: 'f2', box: [32.5, 1.8, 42.2, 12.4], tag: [36.2, 6.4], title: '圖書室', now: '一扇門靠西邊；木地板、要脫鞋；書櫃沿北牆和東牆，前面兩張圓桌；睡袋鋪在南半邊。', ask: ['門在哪、有幾扇？', '在哪裡脫鞋？', '睡覺的範圍'] },
+  { id: 'q13', view: 'f2', box: [41.8, 1.8, 51.7, 12.4], tag: [43.2, 4.3], title: '英語教室', now: '和圖書室之間只隔布簾；兩扇門；桌子靠北牆，行李放中間。', ask: ['布簾在哪？', '行李放哪一塊？'] },
+  { id: 'q14', view: 'f2', box: [51.3, 1.8, 70.4, 12.4], tag: [52.6, 11.0], title: '五、六年級教室', now: '各兩扇門；桌椅推到北牆，中間鋪睡袋。五年級教室給打呼的人睡。', ask: ['門的位置', '桌椅推到哪？', '睡覺的範圍'] },
+  { id: 'q15', view: 'f2', box: [31.2, 12.2, 53.0, 15.1], tag: [31.0, 13.6], title: '二樓走廊的透明門', now: '兩道玻璃雙開門：一道在圖書室西邊，一道在英語教室和五年級教室中間。', ask: ['位置對不對？', '還有其他門嗎？'] },
+  { id: 'q16', view: 'south', box: [31.8, 55.8, 77.2, 66.2], tag: [33.6, 57.3], title: '國幼班', now: '分成東西兩間，各一扇門在面操場那面，門前有走廊；地上鋪彩色地墊。東邊那間是不是國幼班不確定。', ask: ['有幾間、門在哪？', '在哪裡脫鞋？', '睡覺的範圍'] },
+  { id: 'q17', view: 'south', box: [19.8, 55.3, 32.2, 64.2], tag: [21.4, 57.2], title: '器材室', now: '一扇雙開門朝北（對著操場）。', ask: ['門在哪？', '營期間會用到嗎？裡面放什麼？'] },
+  { id: 'q18', view: 'site', box: [2.3, 44.8, 17.2, 66.7], box2: [98.8, 46.3, 114.7, 68.2], tag: [4.8, 47.3], title: '西南角和東南角的房子', now: '空拍看到 4 棟，不知道用途，先畫成斜線方塊。', ask: ['這幾棟是什麼？', '營期間會用到嗎？'] },
+  { id: 'q19', view: 'site', box: [12.8, 1.8, 105.2, 21.2], tag: [30.5, 9.4], title: '外牆和屋頂的顏色', now: '3D 模型畫成米白外牆、紅色屋頂。', ask: ['實際是什麼顏色？（打字就好）'] },
+];
+const QBY = Object.fromEntries(QS.map(q => [q.id, q]));
+const FREE = { id: 'free', view: null, title: '其他想告訴我的', now: '不在上面題目裡的，都可以畫在任何一張圖上，或在這裡打字。', ask: [] };
+
+// ================= SVG 樣式（畫面用 CSS 變數；下載時換成淺色定值） =================
+const LIGHT = { sheet: '#fbfcfb', ink: '#1b2428', ink2: '#56646b', ink3: '#8b979c', poche: '#263035', blue: '#2a66a8', 't-class': '#dfeaf7', 't-sleep': '#e9e3f6', 't-staff': '#f7ead2', 't-life': '#ddefe3', 't-hall': '#f0e4de', 't-stage': '#eee2cb', 't-danger': '#fbe0c6', grass: '#dfecd4', clay: '#efd9c9', court: '#d5e5e1', road: '#dfe3e4', bld: '#cfd7da', amber: '#b5730c', red: '#cc3a27', green: '#2b8653', black: '#1b2428' };
+const svgCss = (pre, V) => {
+  const s = (sel, body) => sel.split(',').map(x => pre + x.trim()).join(',') + '{' + body + '}';
+  const ns = 'vector-effect:non-scaling-stroke;';
+  return [
+    s('.bgsheet', `fill:${V('sheet')}`),
+    s('.pc', `fill:${V('poche')}`), s('.pcc', `fill:${V('poche')}`),
+    s('.ln', `fill:none;stroke:${V('ink')};stroke-width:1.1;${ns}`),
+    s('.hl', `fill:none;stroke:${V('ink2')};stroke-width:.7;${ns}`),
+    s('.hd', `fill:none;stroke:${V('ink2')};stroke-width:.9;stroke-dasharray:6 4;${ns}`),
+    s('.hd2', `fill:none;stroke:${V('ink3')};stroke-width:.7;stroke-dasharray:3 3;${ns}`),
+    s('.fu', `fill:${V('sheet')};stroke:${V('ink2')};stroke-width:.7;${ns}`),
+    s('.fu2', `fill:${V('sheet')};stroke:${V('ink3')};stroke-width:.6;${ns}`),
+    s('.bagf', `fill:${V('t-sleep')};stroke:${V('ink3')};stroke-width:.6;${ns}`),
+    s('.lug', `fill:${V('t-staff')};stroke:${V('ink3')};stroke-width:.6;${ns}`),
+    s('.mat', `fill:none;stroke:${V('ink3')};stroke-width:.4;stroke-opacity:.6;${ns}`),
+    s('.bk', `fill:${V('ink2')}`),
+    s('.win', `fill:${V('sheet')};stroke:${V('ink')};stroke-width:.8;${ns}`),
+    s('.leaf', `fill:${V('sheet')};stroke:${V('ink')};stroke-width:.9;${ns}`),
+    s('.leafl', `fill:none;stroke:${V('ink')};stroke-width:1.6;${ns}`),
+    s('.arc', `fill:none;stroke:${V('ink2')};stroke-width:.6;stroke-dasharray:3 2;${ns}`),
+    s('.arw', `fill:none;stroke:${V('ink')};stroke-width:1;stroke-linejoin:round;stroke-linecap:round;${ns}`),
+    s('.brk', `fill:none;stroke:${V('ink')};stroke-width:.9;${ns}`),
+    s('.curt', `fill:none;stroke:${V('ink2')};stroke-width:1;${ns}`),
+    s('.tick', `fill:none;stroke:${V('ink')};stroke-width:1;${ns}`),
+    s('.axl', `fill:none;stroke:${V('ink3')};stroke-width:.5;stroke-dasharray:10 3 2 3;stroke-opacity:.6;${ns}`),
+    s('.axc', `fill:${V('sheet')};stroke:${V('ink2')};stroke-width:.8;${ns}`),
+    s('.axt', `fill:${V('ink2')};font-family:"IBM Plex Mono",ui-monospace,monospace;font-weight:500`),
+    s('.tx', `fill:${V('ink')};font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",sans-serif;font-weight:700`),
+    s('.tu', `fill:${V('ink2')};font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",sans-serif;font-weight:500`),
+    s('.tq', `fill:${V('ink3')};font-family:"Noto Sans TC",sans-serif;font-weight:700`),
+    s('.dm', `fill:${V('ink2')};font-family:"IBM Plex Mono",ui-monospace,monospace`),
+    s('.tbx', `fill:${V('sheet')};stroke:${V('ink')};stroke-width:1.2;${ns}`),
+    s('.sbf', `fill:${V('ink')};stroke:${V('ink')};stroke-width:.8;${ns}`), s('.sbe', `fill:${V('sheet')};stroke:${V('ink')};stroke-width:.8;${ns}`),
+    s('.nac', `fill:none;stroke:${V('ink2')};stroke-width:.8;${ns}`), s('.naf', `fill:${V('ink')}`),
+    s('.hatch', 'fill:url(#hatch)'), s('.hatch2', 'fill:url(#hatch)'), s('.hatchl', `stroke:${V('ink3')};stroke-width:.35`),
+    s('.fence', `fill:none;stroke:${V('ink')};stroke-width:1.6;stroke-dasharray:12 3 2 3;${ns}`),
+    s('.gate', `fill:none;stroke:${V('ink')};stroke-width:3;stroke-dasharray:2 2;${ns}`),
+    s('.bld', `fill:${V('bld')};stroke:${V('ink')};stroke-width:1;${ns}`),
+    ...['t-class', 't-sleep', 't-staff', 't-life', 't-hall', 't-stage', 't-danger', 'grass', 'clay', 'court', 'road'].map(t => s('.' + t, `fill:${V(t)}`)),
+  ].join('\n');
+};
+const screenCss = svgCss('#svg ', v => `var(--${v})`) + `
+#svg .qr{fill:none;stroke:var(--blue);stroke-width:1.2;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}
+#svg .qr.on{fill:var(--blue-soft);stroke-width:2.2}
+#svg .mk{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+#svg .mk.r{stroke:var(--red)}#svg .mk.g{stroke:var(--green)}#svg .mk.k{stroke:var(--black)}
+#svg .mt{font-family:var(--font);font-weight:700;paint-order:stroke;stroke:var(--sheet);stroke-width:3px;stroke-linejoin:round}
+#svg .mt.r{fill:var(--red)}#svg .mt.g{fill:var(--green)}#svg .mt.k{fill:var(--black)}
+#svg .dim2{opacity:.38}
+#live{fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}`;
+document.getElementById('svgcss').textContent = screenCss;
+
+// ================= 狀態 =================
+const $ = id => document.getElementById(id);
+const svg = $('svg'), sheet = $('sheet'), gBase = $('base'), gQ = $('qlayer'), gMarks = $('marks'), live = $('live'), tagsEl = $('tags');
+let view = 'f1', tool = 'pan', color = 'r', activeQ = null, filter = 'all';
+let vb = { x: 0, y: 0, w: 1000, h: 600 };
+const cache = {};
+const marks = new Map();            // id -> mark
+const answers = new Map();          // qid -> {status,text}
+const mine = [];                    // 這次畫的（可以復原）
+let db = null, canWrite = true, storeState = 'connecting';
+const LS_KEY = 'rb-plan-view';
+try { const v = localStorage.getItem(LS_KEY); if (v && VIEWS[v]) view = v; } catch (e) {}
+
+function baseSvg(v) {
+  if (!cache[v]) { const o = VIEWS[v].draw(); cache[v] = ['tint', 'grid', 'fur', 'thin', 'poche', 'line', 'sym', 'text', 'dim'].map(k => o[k].join('')).join(''); }
+  return cache[v];
+}
+
+// ================= 視窗（viewBox） =================
+const sz = () => ({ w: sheet.clientWidth || 800, h: sheet.clientHeight || 500 });
+const applyVb = () => { svg.setAttribute('viewBox', `${vb.x} ${vb.y} ${vb.w} ${vb.h}`); placeTags(); };
+function fitBox(b, pad = 0.04) {
+  const { w: cw, h: ch } = sz(), A = cw / ch, bw = (b[2] - b[0]) * K, bh = (b[3] - b[1]) * K, cx = (b[0] + b[2]) / 2 * K, cy = (b[1] + b[3]) / 2 * K;
+  let w, h; if (bw / bh > A) { w = bw * (1 + pad * 2); h = w / A; } else { h = bh * (1 + pad * 2); w = h * A; }
+  return { x: cx - w / 2, y: cy - h / 2, w, h };
+}
+let anim = null;
+function goTo(t, smooth) {
+  if (anim) cancelAnimationFrame(anim);
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!smooth || reduce) { vb = t; applyVb(); return; }
+  const s = { ...vb }, t0 = performance.now(), D = 320;
+  const step = now => { const k = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - k, 3); vb = { x: s.x + (t.x - s.x) * e, y: s.y + (t.y - s.y) * e, w: s.w + (t.w - s.w) * e, h: s.h + (t.h - s.h) * e }; applyVb(); if (k < 1) anim = requestAnimationFrame(step); };
+  anim = requestAnimationFrame(step);
+}
+function zoomAt(f, cx, cy) { // cx,cy：螢幕座標（相對 sheet）
+  const { w: cw, h: ch } = sz(), ux = vb.x + cx / cw * vb.w, uy = vb.y + cy / ch * vb.h;
+  const nw = Math.max(40, Math.min(3000, vb.w * f)), k = nw / vb.w;
+  vb = { x: ux - (ux - vb.x) * k, y: uy - (uy - vb.y) * k, w: nw, h: vb.h * k }; applyVb();
+}
+const pxPerM = () => sz().w / vb.w * K;
+function toPlan(e) { const r = sheet.getBoundingClientRect(), { w: cw, h: ch } = sz(); return [(vb.x + (e.clientX - r.left) / cw * vb.w) / K, (vb.y + (e.clientY - r.top) / ch * vb.h) / K]; }
+new ResizeObserver(() => { const { w: cw, h: ch } = sz(), cx = vb.x + vb.w / 2, cy = vb.y + vb.h / 2, nh = vb.w * ch / cw; vb = { x: vb.x, y: cy - nh / 2, w: vb.w, h: nh }; applyVb(); }).observe(sheet);
+
+// ================= 畫面 =================
+function renderTabs() {
+  $('tabs').innerHTML = VIEW_ORDER.map(k => { const n = QS.filter(q => q.view === k && !answered(q.id)).length; return `<button role="tab" data-v="${k}" aria-selected="${k === view}">${VIEWS[k].name}${n ? `<span class="cnt">${n}</span>` : ''}</button>`; }).join('');
+}
+function setView(v, keepVb) {
+  view = v; try { localStorage.setItem(LS_KEY, v); } catch (e) {}
+  gBase.innerHTML = baseSvg(v); renderTabs(); renderQLayer(); renderMarks();
+  if (!keepVb) goTo(fitBox(VIEWS[v].box, 0.01), false);
+}
+function renderQLayer() {
+  const a = activeQ && QBY[activeQ];
+  let h = '';
+  if (a && a.view === view) for (const b of [a.box, a.box2].filter(Boolean)) h += `<rect x="${r2(b[0])}" y="${r2(b[1])}" width="${r2(b[2] - b[0])}" height="${r2(b[3] - b[1])}" rx="4" class="qr on"/>`;
+  gQ.innerHTML = h;
+  tagsEl.innerHTML = QS.filter(q => q.view === view).map(q => `<button class="tag${q.id === activeQ ? ' on' : ''}${answered(q.id) ? ' done' : ''}" data-q="${q.id}" title="${esc(q.title)}">${+q.id.slice(1)}</button>`).join('');
+  placeTags();
+}
+function placeTags() {
+  const { w: cw, h: ch } = sz();
+  for (const el of tagsEl.children) { const q = QBY[el.dataset.q], x = (q.tag[0] * K - vb.x) / vb.w * cw, y = (q.tag[1] * K - vb.y) / vb.h * ch; el.style.left = x + 'px'; el.style.top = y + 'px'; el.hidden = x < -20 || y < -20 || x > cw + 20 || y > ch + 20; }
+}
+function markSvg(id, m) {
+  const cls = (activeQ && m.q !== activeQ) ? ' dim2' : '';
+  if (m.k === 't') return `<text x="${r2(m.u)}" y="${r2(m.v)}" font-size="${r2(m.s || 0.8)}" class="mt ${m.c}${cls}" data-id="${id}" dominant-baseline="central">${esc(m.t)}</text>`;
+  const p = m.p || []; if (p.length < 4) return '';
+  let d = `M${P(p[0], p[1])}`; for (let i = 2; i < p.length; i += 2) d += `L${P(p[i], p[i + 1])}`;
+  return `<path d="${d}" class="mk ${m.c}${cls}" data-id="${id}"/>`;
+}
+function renderMarks() {
+  let h = ''; for (const [id, m] of marks) if (m.view === view) h += markSvg(id, m);
+  gMarks.innerHTML = h;
+}
+const answered = id => { const a = answers.get(id); return !!(a && (a.status || (a.text || '').trim())) || [...marks.values()].some(m => m.q === id); };
+const markCount = id => [...marks.values()].filter(m => m.q === id).length;
+
+const STATUS = { ok: '沒錯', fix: '要改', unsure: '不確定', note: '已回覆', '': '未回覆' };
+function statusOf(id) { const a = answers.get(id) || {}; if (a.status) return a.status; if ((a.text || '').trim() || markCount(id)) return 'note'; return ''; }
+function renderList() {
+  const list = QS.concat([FREE]);
+  $('qs').innerHTML = list.map((q, i) => {
+    const s = statusOf(q.id), hide = filter === 'todo' && q.id !== 'free' && s && s !== 'unsure';
+    return `<li class="q${q.id === activeQ ? ' on' : ''}" data-q="${q.id}"${hide ? ' hidden' : ''}>
+      <button class="qh" aria-expanded="${q.id === activeQ}"><span class="num">${q.id === 'free' ? '＋' : i + 1}</span><span class="qt">${esc(q.title)}<small>${q.view ? VIEWS[q.view].name : '任何一張圖'}</small></span>${q.id === 'free' ? '' : `<span class="st" data-s="${s}">${STATUS[s]}</span>`}</button>
+      <div class="qb"${q.id === activeQ ? '' : ' hidden'}>
+        <p class="now"><b>目前模型</b>${esc(q.now)}</p>
+        ${q.ask.length ? `<ul>${q.ask.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+        ${q.id === 'free' ? `<div class="ans"><button data-act="draw">在圖上畫</button></div>` : `<div class="ans" role="group" aria-label="回覆">${['ok', 'fix', 'unsure'].map(k => `<button data-s="${k}" aria-pressed="${(answers.get(q.id) || {}).status === k}">${{ ok: '沒錯', fix: '要改，我畫給你', unsure: '不確定' }[k]}</button>`).join('')}</div>`}
+        <label for="t-${q.id}">補充說明</label>
+        <textarea id="t-${q.id}" data-q="${q.id}" rows="2" placeholder="${q.id === 'free' ? '想到什麼都可以寫' : '例如：只有一扇門，在靠黑板那端'}"${canWrite ? '' : ' disabled'}>${esc((answers.get(q.id) || {}).text || '')}</textarea>
+        <p class="mkc">圖上畫記 <span data-cnt="${q.id}">${markCount(q.id)}</span> 筆</p>
+      </div></li>`;
+  }).join('');
+  const done = QS.filter(q => statusOf(q.id)).length;
+  $('progT').textContent = `${done} / ${QS.length} 已回覆`; $('progB').style.width = (done / QS.length * 100) + '%';
+}
+function refreshListLight() { // 不重畫整個清單（避免打字時游標跳掉）
+  for (const li of $('qs').children) {
+    const id = li.dataset.q, s = statusOf(id), st = li.querySelector('.st'); if (st) { st.dataset.s = s; st.textContent = STATUS[s]; }
+    const c = li.querySelector(`[data-cnt]`); if (c) c.textContent = markCount(id);
+    const ta = li.querySelector('textarea'); if (ta && document.activeElement !== ta) { const t = (answers.get(id) || {}).text || ''; if (ta.value !== t && !dirty[id]) ta.value = t; }
+    li.querySelectorAll('.ans [data-s]').forEach(b => b.setAttribute('aria-pressed', String((answers.get(id) || {}).status === b.dataset.s)));
+  }
+  const done = QS.filter(q => statusOf(q.id)).length;
+  $('progT').textContent = `${done} / ${QS.length} 已回覆`; $('progB').style.width = (done / QS.length * 100) + '%';
+  renderTabs(); for (const el of tagsEl.children) el.classList.toggle('done', answered(el.dataset.q));
+}
+function selectQ(id, fromTag) {
+  activeQ = activeQ === id && !fromTag ? null : id;
+  const q = activeQ && QBY[activeQ];
+  if (q && q.view !== view) setView(q.view, true);
+  if (q) { const b = q.box2 ? [Math.min(q.box[0], q.box2[0]), Math.min(q.box[1], q.box2[1]), Math.max(q.box[2], q.box2[2]), Math.max(q.box[3], q.box2[3])] : q.box; goTo(fitBox(b, 0.1), true); }
+  renderList(); renderQLayer(); renderMarks();
+  const li = $('qs').querySelector(`[data-q="${id}"]`); if (li && fromTag) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  hint();
+}
+function setTool(t) {
+  tool = t; sheet.dataset.tool = t;
+  $('toolSeg').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tool === t)));
+  hint();
+}
+function hint() {
+  const q = activeQ ? (activeQ === 'free' ? '「其他」' : `第 ${+activeQ.slice(1)} 題`) : '「其他」';
+  const t = { pan: '拖曳移動 · 滾輪或兩指縮放', pen: `畫筆：畫的會記在${q}`, text: `文字：點一下圖，打字後按 Enter（記在${q}）`, erase: '擦掉：點一下要刪的畫記' }[tool];
+  $('hint').textContent = canWrite || tool === 'pan' ? t : '只能看，不能畫（沒有編輯權限）';
+}
+function setSave(s) {
+  storeState = s; const el = $('save'); el.dataset.s = s;
+  el.textContent = { connecting: '連線中…', ok: '會自動儲存', saving: '儲存中…', saved: '已儲存', ro: '只能看，不能畫', local: '沒有連上儲存空間：畫的內容不會保存', slow: '還連不上儲存空間，畫的可能沒存到', err: '儲存失敗，請重新整理後再試' }[s] || '';
+}
+
+// ================= 畫筆、文字、橡皮擦 =================
+const pointers = new Map(); let drawPts = null, pinch = null, panStart = null;
+function rdp(pts, eps) { // pts: [[u,v],...]
+  if (pts.length < 3) return pts;
+  const [a, b] = [pts[0], pts[pts.length - 1]]; let dm = 0, idx = 0;
+  for (let i = 1; i < pts.length - 1; i++) { const d = segDist(pts[i], a, b); if (d > dm) { dm = d; idx = i; } }
+  if (dm > eps) return rdp(pts.slice(0, idx + 1), eps).slice(0, -1).concat(rdp(pts.slice(idx), eps));
+  return [a, b];
+}
+function segDist(p, a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy; let t = L ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L : 0; t = Math.max(0, Math.min(1, t)); return Math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy); }
+const liveD = () => drawPts.length ? `M${drawPts.map(p => P(p[0], p[1])).join('L')}` : '';
+
+svg.addEventListener('pointerdown', e => {
+  if (e.button > 0) return;
+  svg.setPointerCapture(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  closeNote(true);
+  if (pointers.size === 2) { drawPts = null; live.setAttribute('d', ''); const [p1, p2] = [...pointers.values()]; pinch = { d: Math.hypot(p1.x - p2.x, p1.y - p2.y), vb: { ...vb }, mx: (p1.x + p2.x) / 2, my: (p1.y + p2.y) / 2 }; panStart = null; return; }
+  if (pointers.size > 2) return;
+  if (tool === 'pen' && canWrite) { drawPts = [toPlan(e)]; live.setAttribute('class', 'mk ' + color); live.setAttribute('d', liveD()); }
+  else if (tool === 'text' && canWrite) openNote(e);
+  else if (tool === 'erase' && canWrite) eraseAt(e);
+  else panStart = { x: e.clientX, y: e.clientY, vb: { ...vb } };
+});
+svg.addEventListener('pointermove', e => {
+  if (!pointers.has(e.pointerId)) return;
+  pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  const { w: cw } = sz(), r = sheet.getBoundingClientRect();
+  if (pinch && pointers.size === 2) {
+    const [p1, p2] = [...pointers.values()], d = Math.hypot(p1.x - p2.x, p1.y - p2.y), mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
+    const k = pinch.d / Math.max(10, d), nw = Math.max(40, Math.min(3000, pinch.vb.w * k)), kk = nw / pinch.vb.w, s0 = pinch.vb.w / cw;
+    const ux = pinch.vb.x + (pinch.mx - r.left) * s0, uy = pinch.vb.y + (pinch.my - r.top) * s0, s1 = nw / cw;
+    vb = { x: ux - (mx - r.left) * s1, y: uy - (my - r.top) * s1, w: nw, h: pinch.vb.h * kk }; applyVb(); return;
+  }
+  if (drawPts) { const p = toPlan(e), q = drawPts[drawPts.length - 1]; if (Math.hypot(p[0] - q[0], p[1] - q[1]) * pxPerM() > 1.5) { drawPts.push(p); live.setAttribute('d', liveD()); } return; }
+  if (panStart) { const s = panStart.vb.w / cw; vb = { ...panStart.vb, x: panStart.vb.x - (e.clientX - panStart.x) * s, y: panStart.vb.y - (e.clientY - panStart.y) * s }; applyVb(); }
+});
+const endPtr = e => {
+  pointers.delete(e.pointerId);
+  if (pointers.size < 2) pinch = null;
+  if (drawPts && pointers.size === 0) {
+    const pts = rdp(drawPts, 1.2 / pxPerM()); drawPts = null; live.setAttribute('d', '');
+    if (pts.length >= 2) { const flat = []; for (const p of pts) flat.push(+p[0].toFixed(2), +p[1].toFixed(2)); if (pts.length === 2 && Math.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]) < 0.01) { flat[2] += 0.05; } addMark({ k: 'p', p: flat }); }
+  }
+  if (pointers.size === 0) panStart = null;
+};
+svg.addEventListener('pointerup', endPtr); svg.addEventListener('pointercancel', endPtr);
+sheet.addEventListener('wheel', e => { e.preventDefault(); const r = sheet.getBoundingClientRect(); zoomAt(Math.exp(e.deltaY * (e.ctrlKey ? 0.01 : 0.0016)), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+
+let noteEl = null, notePos = null;
+function openNote(e) {
+  const p = toPlan(e), r = sheet.getBoundingClientRect(); notePos = { u: p[0], v: p[1], s: 16 / pxPerM() };
+  noteEl = document.createElement('input'); noteEl.className = 'note-in'; noteEl.id = 'note-in'; noteEl.placeholder = '打字，按 Enter 放上去';
+  noteEl.style.left = Math.min(e.clientX - r.left, r.width - 200) + 'px'; noteEl.style.top = Math.max(0, e.clientY - r.top - 18) + 'px';
+  sheet.appendChild(noteEl); setTimeout(() => noteEl && noteEl.focus(), 0);
+  noteEl.addEventListener('keydown', ev => { if (ev.key === 'Enter' && !ev.isComposing) { ev.preventDefault(); closeNote(true); } else if (ev.key === 'Escape') closeNote(false); });
+  noteEl.addEventListener('blur', () => closeNote(true));
+}
+function closeNote(commit) {
+  if (!noteEl) return; const t = noteEl.value.trim(), el = noteEl; noteEl = null; el.remove();
+  if (commit && t) addMark({ k: 't', u: +notePos.u.toFixed(2), v: +notePos.v.toFixed(2), s: +notePos.s.toFixed(3), t: t.slice(0, 200) });
+}
+function eraseAt(e) {
+  const [u, v] = toPlan(e), tol = 10 / pxPerM(); let best = null, bd = tol;
+  for (const [id, m] of marks) {
+    if (m.view !== view) continue;
+    let d = Infinity;
+    if (m.k === 't') { const w = (m.t || '').length * (m.s || 0.8) * 1.0, h = m.s || 0.8; if (u >= m.u - tol && u <= m.u + w + tol && v >= m.v - h / 2 - tol && v <= m.v + h / 2 + tol) d = 0; }
+    else { const p = m.p || []; for (let i = 0; i + 3 < p.length; i += 2) d = Math.min(d, segDist([u, v], [p[i], p[i + 1]], [p[i + 2], p[i + 3]])); }
+    if (d <= bd) { bd = d; best = id; }
+  }
+  if (best) delMark(best);
+}
+
+// ================= 儲存（db） =================
+let seq = 0;
+async function addMark(m) {
+  const mark = Object.assign({ view, q: activeQ || 'free', c: color, at: Date.now() }, m);
+  if (!db) { const id = 'local' + (++seq); marks.set(id, mark); mine.push(id); renderMarks(); refreshListLight(); $('undo').disabled = false; return; }
+  const ref = db.collection('marks').doc(); marks.set(ref.id, mark); mine.push(ref.id); renderMarks(); refreshListLight(); $('undo').disabled = false;
+  setSave('saving');
+  try { await ref.set(mark); setSave('saved'); }
+  catch (err) { failWrite(err); marks.delete(ref.id); renderMarks(); refreshListLight(); }
+}
+async function delMark(id) {
+  const m = marks.get(id); marks.delete(id); const i = mine.indexOf(id); if (i >= 0) mine.splice(i, 1); $('undo').disabled = !mine.length;
+  renderMarks(); refreshListLight();
+  if (!db || id.startsWith('local')) return;
+  setSave('saving');
+  try { await db.doc('marks/' + id).delete(); setSave('saved'); } catch (err) { failWrite(err); if (m) marks.set(id, m); renderMarks(); }
+}
+function failWrite(err) {
+  const c = err && err.code;
+  if (c === 'invalid_argument' || c === 'not_granted' || c === 'revoked') { canWrite = false; setSave('ro'); hint(); }
+  else if (c === 'quota_exceeded') { setSave('err'); $('save').textContent = '儲存空間滿了，請在聊天裡告訴我'; }
+  else setSave('err');
+}
+const ansDirty = {}, ansBusy = {}, dirty = {};
+function setAnswer(id, patch) {
+  const a = Object.assign({ status: '', text: '' }, answers.get(id) || {}, patch); answers.set(id, a);
+  refreshListLight(); renderQLayer();
+  if (!db) return;
+  ansDirty[id] = true; if (!ansBusy[id]) flushAnswer(id);
+}
+async function flushAnswer(id) {
+  ansBusy[id] = true; setSave('saving');
+  while (ansDirty[id]) {
+    ansDirty[id] = false; const a = answers.get(id) || {};
+    try { await db.doc('answers/' + id).set({ status: a.status || '', text: a.text || '', at: Date.now() }); setSave('saved'); }
+    catch (err) { failWrite(err); break; }
+  }
+  ansBusy[id] = false; dirty[id] = false;
+}
+
+async function connect() {
+  const C = window.claude;
+  if (!C || typeof C.use !== 'function') { setSave('local'); return; }
+  try { db = await C.use('db'); } catch (e) { db = null; }
+  if (!db) { setSave('local'); return; }
+  try { const u = await C.use('user'); if (u) { const w = await u.can('data.write'); if (w === false) { canWrite = false; } } } catch (e) {}
+  setSave(canWrite ? 'ok' : 'ro'); hint(); renderList();
+  let t = setTimeout(() => setSave('slow'), 10000);
+  const done = () => { if (t) { clearTimeout(t); t = null; if (storeState === 'slow' || storeState === 'connecting') setSave(canWrite ? 'ok' : 'ro'); } };
+  db.collection('marks').onSnapshot(s => {
+    const keepLocal = [...marks.entries()].filter(([id]) => id.startsWith('local'));
+    marks.clear(); for (const d of s.docs) { const m = d.data(); if (m && m.view) marks.set(d.id, m); } for (const [id, m] of keepLocal) marks.set(id, m);
+    if (!s.metadata.fromCache) done(); renderMarks(); refreshListLight();
+  }, err => { done(); setSave('err'); });
+  db.collection('answers').onSnapshot(s => {
+    for (const d of s.docs) { if (ansBusy[d.id] || ansDirty[d.id]) continue; const a = d.data(); if (a) answers.set(d.id, { status: a.status || '', text: a.text || '' }); }
+    if (!s.metadata.fromCache) done(); refreshListLight(); renderQLayer();
+  }, err => { done(); setSave('err'); });
+}
+
+// ================= 下載 =================
+function exportSvg() {
+  const b = VIEWS[view].box, x = b[0] * K, y = b[1] * K, w = (b[2] - b[0]) * K, h = (b[3] - b[1]) * K, pxm = 24;
+  const W = Math.round(w / K * pxm), H = Math.round(h / K * pxm);
+  return { W, H, str: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}" width="${W}" height="${H}"><defs><pattern id="hatch" patternUnits="userSpaceOnUse" width="5" height="5" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="5" class="hatchl"/></pattern><style>${svgCss('', k => LIGHT[k])}</style></defs><rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#fbfcfb"/>${baseSvg(view)}</svg>` };
+}
+async function download(kind) {
+  let dl = null; try { dl = await window.claude?.use?.('downloads'); } catch (e) {}
+  if (!dl) { $('save').textContent = '這個畫面不能下載檔案'; return; }
+  const { W, H, str } = exportSvg(), name = `瑞北國小_${VIEWS[view].name}平面圖`;
+  try {
+    if (kind === 'svg') { await dl.save({ filename: name + '.svg', data: new Blob([str], { type: 'image/svg+xml' }) }); return; }
+    const url = URL.createObjectURL(new Blob([str], { type: 'image/svg+xml' })), img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+    const cv = document.createElement('canvas'); cv.width = W; cv.height = H; const g = cv.getContext('2d'); g.fillStyle = '#fbfcfb'; g.fillRect(0, 0, W, H); g.drawImage(img, 0, 0, W, H); URL.revokeObjectURL(url);
+    const blob = await new Promise(r => cv.toBlob(r, 'image/png'));
+    await dl.save({ filename: name + '.png', data: blob });
+  } catch (err) { if (err && err.code !== 'declined') $('save').textContent = '下載沒有成功'; }
+}
+
+// ================= 事件 =================
+$('tabs').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (!b) return; if (activeQ && QBY[activeQ] && QBY[activeQ].view !== b.dataset.v) { activeQ = null; renderList(); } setView(b.dataset.v); });
+tagsEl.addEventListener('click', e => { const b = e.target.closest('[data-q]'); if (b) selectQ(b.dataset.q, true); });
+$('toolSeg').addEventListener('click', e => { const b = e.target.closest('[data-tool]'); if (b) setTool(b.dataset.tool); });
+$('sw').addEventListener('click', e => { const b = e.target.closest('[data-c]'); if (!b) return; color = b.dataset.c; $('sw').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); if (tool === 'pan' || tool === 'erase') setTool('pen'); });
+$('undo').addEventListener('click', () => { const id = mine[mine.length - 1]; if (id) delMark(id); });
+$('zin').addEventListener('click', () => { const { w, h } = sz(); zoomAt(1 / 1.4, w / 2, h / 2); });
+$('zout').addEventListener('click', () => { const { w, h } = sz(); zoomAt(1.4, w / 2, h / 2); });
+$('zfit').addEventListener('click', () => goTo(fitBox(VIEWS[view].box, 0.01), true));
+$('dlPng').addEventListener('click', () => download('png')); $('dlSvg').addEventListener('click', () => download('svg'));
+$('filters').addEventListener('click', e => { const b = e.target.closest('[data-f]'); if (!b) return; filter = b.dataset.f; $('filters').querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderList(); });
+$('qs').addEventListener('click', e => {
+  const li = e.target.closest('.q'); if (!li) return; const id = li.dataset.q;
+  if (e.target.closest('.qh')) { selectQ(id); return; }
+  const s = e.target.closest('.ans [data-s]');
+  if (s && canWrite) { const cur = (answers.get(id) || {}).status; const ns = cur === s.dataset.s ? '' : s.dataset.s; setAnswer(id, { status: ns }); if (ns === 'fix') { if (activeQ !== id) selectQ(id); setTool('pen'); } return; }
+  if (e.target.closest('[data-act="draw"]')) { activeQ = 'free'; renderList(); renderQLayer(); renderMarks(); setTool('pen'); }
+});
+const typing = {};
+$('qs').addEventListener('input', e => { const ta = e.target.closest('textarea'); if (!ta) return; const id = ta.dataset.q; dirty[id] = true; clearTimeout(typing[id]); typing[id] = setTimeout(() => setAnswer(id, { text: ta.value.slice(0, 4000) }), 700); });
+$('qs').addEventListener('focusout', e => { const ta = e.target.closest && e.target.closest('textarea'); if (!ta) return; const id = ta.dataset.q; if (dirty[id]) { clearTimeout(typing[id]); setAnswer(id, { text: ta.value.slice(0, 4000) }); } });
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') { e.preventDefault(); $('undo').click(); return; }
+  const t = { v: 'pan', p: 'pen', t: 'text', e: 'erase' }[e.key.toLowerCase()]; if (t && !e.ctrlKey && !e.metaKey && !e.altKey) setTool(t);
+  if (e.key === '+' || e.key === '=') $('zin').click(); if (e.key === '-') $('zout').click(); if (e.key === '0') $('zfit').click();
+});
+
+// 圖例
+const lg = (svgInner, txt) => `<li><svg viewBox="0 0 34 18" aria-hidden="true">${svgInner}</svg><span>${txt}</span></li>`;
+$('legend').innerHTML = [
+  lg('<rect x="2" y="7" width="30" height="4" style="fill:var(--poche)"/>', '牆'),
+  lg('<rect x="2" y="7" width="30" height="4" style="fill:var(--sheet);stroke:var(--ink);stroke-width:1"/><line x1="2" y1="9" x2="32" y2="9" style="stroke:var(--ink2);stroke-width:.7"/>', '窗'),
+  lg('<rect x="2" y="7" width="6" height="4" style="fill:var(--poche)"/><rect x="26" y="7" width="6" height="4" style="fill:var(--poche)"/><rect x="8" y="7.5" width="11" height="1.6" style="fill:var(--sheet);stroke:var(--ink);stroke-width:.8"/><rect x="15" y="9.1" width="11" height="1.6" style="fill:var(--sheet);stroke:var(--ink);stroke-width:.8"/>', '拉門'),
+  lg('<rect x="2" y="13" width="6" height="3" style="fill:var(--poche)"/><rect x="26" y="13" width="6" height="3" style="fill:var(--poche)"/><line x1="8" y1="13" x2="8" y2="1" style="stroke:var(--ink);stroke-width:1.6"/><path d="M8 1A12 12 0 0 1 20 13" style="fill:none;stroke:var(--ink2);stroke-width:.7;stroke-dasharray:2 1.5"/>', '推門（弧線＝開的方向）'),
+  lg('<g style="stroke:var(--ink2);stroke-width:.7">' + [4, 8, 12, 16, 20, 24, 28].map(x => `<line x1="${x}" y1="3" x2="${x}" y2="15"/>`).join('') + '</g><path d="M4 9H30M26 6L30 9L26 12" style="fill:none;stroke:var(--ink);stroke-width:1"/>', '樓梯（箭頭往上）'),
+  lg('<rect x="2" y="3" width="30" height="12" style="fill:url(#hatch);stroke:var(--ink2);stroke-width:.7"/>', '不知道是什麼'),
+  lg('<rect x="2" y="3" width="30" height="12" rx="2" style="fill:var(--t-class)"/>', '上課'),
+  lg('<rect x="2" y="3" width="30" height="12" rx="2" style="fill:var(--t-sleep)"/>', '睡覺'),
+  lg('<rect x="2" y="3" width="30" height="12" rx="2" style="fill:var(--t-staff)"/>', '哥姐休息・團本'),
+  lg('<rect x="2" y="3" width="30" height="12" rx="2" style="fill:var(--t-life)"/>', '吃飯・早餐・行李'),
+  lg('<rect x="2" y="3" width="30" height="12" rx="2" style="fill:var(--t-danger)"/>', '小朋友不能去'),
+  lg('<circle cx="17" cy="9" r="7" style="fill:var(--sheet);stroke:var(--blue);stroke-width:2"/>', '待確認（點了會跳過去）'),
+  lg('<path d="M3 13C9 3 14 15 20 7S29 5 31 9" style="fill:none;stroke:var(--red);stroke-width:2.4;stroke-linecap:round"/>', '你的畫記'),
+].join('');
+// 圖例裡的 hatch 要能用到 #hatch：把 pattern 放進文件裡共用
+// （#hatch 定義在主 SVG 的 defs，同一份文件內可以參照）
+
+// ================= 開始 =================
+renderList(); setView(view); setTool('pan'); hint(); connect();
+})();
+</script>
