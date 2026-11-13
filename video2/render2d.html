@@ -104,7 +104,7 @@ function P4(t) { const L = T.P4, V = L.vo, D = L.d; bg(t);
   lane(640, '其他哥姐', 'rgba(60,200,190,0.95)', [['會議室吃早餐', 0.12], ['08:10 禮堂集合', 0.55]], V['32'], D['32'], true);
 }
 // ---------- 7 回家路線 ----------
-const MAPW = 1458, MAPH = 1418, MS = 860 / MAPH, MX = 60, MY = 40; const mp = (x, y) => [MX + x * MS, MY + y * MS];
+const MAPW = 1458, MAPH = 1418, MS = 830 / MAPH, MX = 70, MY = 92; const mp = (x, y) => [MX + x * MS, MY + y * MS];
 function ring(x, y, t, col, a = 1) { for (let k = 0; k < 2; k++) { const p = ((t * 0.9 + k * 0.5) % 1); g.save(); g.globalAlpha = a * (1 - p); g.strokeStyle = col; g.lineWidth = 5; g.beginPath(); g.arc(x, y, 14 + p * 46, 0, 7); g.stroke(); g.restore(); } g.save(); g.globalAlpha = a; g.beginPath(); g.arc(x, y, 10, 0, 7); g.fillStyle = col; g.fill(); g.restore(); }
 function P5(t) { const L = T.P5, V = L.vo, D = L.d; bg(t);
   const sw = V['35'] - 0.15, m = ap(t, sw, 0.5);

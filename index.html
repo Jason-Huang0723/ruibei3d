@@ -50,7 +50,7 @@ header p{margin:2px 0 0;font-size:12px;color:var(--ink-2)}
     <button class="chip" id="free">自由視角</button>
     <button class="chip on" id="lbl">字幕・標籤</button>
     <button class="chip" id="expBtn">匯出影片</button>
-    <div id="credit">影像、建物框：內政部國土測繪中心｜道路：© OpenStreetMap 貢獻者｜地形：Mapzen Terrain Tiles｜人物：three.js 範例 Xbot（Mixamo）</div>
+    <div id="credit">影像、建物框：內政部國土測繪中心｜道路：© OpenStreetMap 貢獻者｜地形：Mapzen Terrain Tiles｜吉祥物：台大慈幼山友</div>
   </div>
 </div>
 <div id="exp">
@@ -264,28 +264,30 @@ RB.CF = { o: [-50.7, 50.6], eu: [0.9715, -0.2371], ev: [-0.2371, -0.9715] };
 RB.uv2xy = (u, v) => [RB.CF.o[0] + u * RB.CF.eu[0] + v * RB.CF.ev[0], RB.CF.o[1] + u * RB.CF.eu[1] + v * RB.CF.ev[1]];
 RB.campusAngle = Math.atan2(RB.CF.eu[1], RB.CF.eu[0]);
 RB.GROUND = 0;
-// 北排教室大樓尺寸。西端是「辦公室＋穿堂」那一塊：穿堂在辦公室南側往操場突出（PJ），二樓是校長室。
-const S_ = RB.S = { F1: 0.3, F2: 3.9, FH: 3.6, EAVE: 7.5, V0: 2.0, V1: 12.2, V2: 15.0, UW: 13, UE: 77, PU: 26, PV: 21 };
+// 北排教室大樓尺寸。西端是 L 形：一樓辦公室（北）＋穿堂（南），二樓會議室＋校長室（地板高 0.45 m，從樓梯口走幾階小樓梯上去）。
+const S_ = RB.S = { F1: 0.3, F2: 3.9, FH: 3.6, EAVE: 7.5, V0: 2.0, V1: 12.2, V2: 15.0, UW: 13, UE: 77, PU: 21.4, PV: 22, WX: 21.4, WS: 22, FP: 4.35 };
 // 房間（f=樓層）。門的位置 d：門中心的 u。x:true 的是不在北排一列裡的房間（有自己的 v 範圍）。
 RB.ROOMS = [
-  { f: 1, u0: 13, u1: 29.5, name: '辦公室', type: 'office', d: [17.5, 26.6] },
+  { f: 1, u0: 13, u1: 21.4, v0: 2, v1: 14, name: '辦公室', type: 'office', x: true },
+  { f: 1, u0: 21.4, u1: 29.5, name: '', type: 'other', d: [27.8] },
   { f: 1, u0: 29.5, u1: 32.7, name: '樓梯', type: 'stairs' },
-  { f: 1, u0: 32.7, u1: 42.0, name: '四教', type: 'class', d: [34.2, 40.4] },
-  { f: 1, u0: 42.0, u1: 51.5, name: '三教', type: 'class', d: [43.5, 49.9] },
-  { f: 1, u0: 51.5, u1: 60.6, name: '二教', type: 'class', d: [53.0, 59.0] },
-  { f: 1, u0: 60.6, u1: 70.2, name: '一教', type: 'class', d: [62.1, 68.6] },
+  { f: 1, u0: 32.7, u1: 42.0, name: '四教', type: 'class4', d: [34.2, 40.5] },
+  { f: 1, u0: 42.0, u1: 51.5, name: '三教', type: 'class', d: [43.5, 50.0] },
+  { f: 1, u0: 51.5, u1: 60.6, name: '二教', type: 'class', d: [53.0, 59.1] },
+  { f: 1, u0: 60.6, u1: 70.2, name: '一教', type: 'class', d: [62.1, 68.7] },
   { f: 1, u0: 70.2, u1: 73.4, name: '樓梯', type: 'stairs' },
-  { f: 1, u0: 73.4, u1: 77.0, name: '廁所', type: 'toilet', d: [75.2] },
-  { f: 2, u0: 13, u1: 29.5, name: '會議室', type: 'meeting', d: [17.5, 26.6] },
+  { f: 1, u0: 73.4, u1: 77.0, name: '廁所', type: 'toilet', d: [74.3, 76.1] },
+  { f: 2, u0: 13, u1: 17.6, v0: 2, v1: 15, name: '', type: 'other', x: true },
+  { f: 2, u0: 17.6, u1: 29.5, v0: 2, v1: 15, name: '會議室', type: 'meeting', x: true },
   { f: 2, u0: 29.5, u1: 32.7, name: '樓梯', type: 'stairs' },
-  { f: 2, u0: 32.7, u1: 42.0, name: '圖書室', type: 'library', d: [34.2] },
-  { f: 2, u0: 42.0, u1: 51.5, name: '英語教室', type: 'english', d: [43.5, 49.9] },
-  { f: 2, u0: 51.5, u1: 60.6, name: '五教', type: 'sleep', d: [53.0, 59.0] },
-  { f: 2, u0: 60.6, u1: 70.2, name: '六教', type: 'sleep', d: [62.1, 68.6] },
+  { f: 2, u0: 32.7, u1: 42.0, name: '圖書室', type: 'library', d: [37.2], glass: true },
+  { f: 2, u0: 42.0, u1: 51.5, name: '英語教室', type: 'english', d: [49.05], glass: true },
+  { f: 2, u0: 51.5, u1: 60.6, name: '五教', type: 'sleep', d: [53.0, 59.1] },
+  { f: 2, u0: 60.6, u1: 70.2, name: '六教', type: 'sleep', d: [62.1, 68.7] },
   { f: 2, u0: 70.2, u1: 73.4, name: '樓梯', type: 'stairs' },
-  { f: 2, u0: 73.4, u1: 77.0, name: '廁所', type: 'toilet', d: [75.2] },
-  { f: 1, u0: 13, u1: 26, v0: 12.2, v1: 21, name: '穿堂', type: 'hall', x: true },
-  { f: 2, u0: 13, u1: 26, v0: 15, v1: 21, name: '校長室', type: 'principal', d: [24.6], x: true },
+  { f: 2, u0: 73.4, u1: 77.0, name: '廁所', type: 'toilet', d: [74.3, 76.1] },
+  { f: 1, u0: 13, u1: 21.4, v0: 14, v1: 22, name: '穿堂', type: 'hall', x: true },
+  { f: 2, u0: 13, u1: 21.4, v0: 15, v1: 22, name: '校長室', type: 'principal', x: true },
 ];
 RB.U = (u, v, h) => { const [x, y] = RB.uv2xy(u, v); return [x, RB.GROUND + h, -y]; };
 
@@ -376,6 +378,8 @@ function schoolMaterials() {
   M.conc = S({ roughness: 0.95, map: canvasTex(256, 256, (g, n) => { noiseFill(g, n, '#b9b6ad', 0.10, 9000, 2); g.strokeStyle = 'rgba(60,60,60,0.35)'; g.lineWidth = 2; for (let i = 0; i <= n; i += n / 2) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, n); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(n, i); g.stroke(); } }) });
   M.court = S({ roughness: 0.9, color: 0x3f6f5a }); M.line = S({ color: 0xf2f2ea, roughness: 0.8 });
   M.bag = S({ vertexColors: true, roughness: 0.9 });
+  M.doorGreen = S({ color: 0x3f8f5f, roughness: 0.6 }); M.knob = S({ color: 0xc9ccd0, roughness: 0.3, metalness: 0.8 }); M.foamR = S({ color: 0xd9433a, roughness: 0.9 }); M.foamB = S({ color: 0x2f6fd0, roughness: 0.9 });
+  M.glassDoor = S({ color: 0xbfd6e2, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
   return M;
 }
 
@@ -448,125 +452,187 @@ function furniture() { if (FURN) return FURN; FURN = {
   ceilFan: (() => { const gs = [new THREE.CylinderGeometry(0.12, 0.12, 0.14, 12).toNonIndexed(), mergeBoxes([[0.04, 0.4, 0.04, 0, 0.27, 0]])]; for (let k = 0; k < 5; k++) { const b = new THREE.BoxGeometry(0.62, 0.015, 0.13).toNonIndexed(); b.translate(0.42, -0.03, 0); b.rotateY(k * Math.PI * 2 / 5); gs.push(b); } return mergeGeometries(gs); })(),
 }; return FURN; }
 
+// ---- 會開關的門（推門）：每扇門是一個以門軸為中心的群組，RB.setDoor(id, 0..1) 控制開的程度 ----
+// axis 'u'：牆沿 u（門板沿 u，從 a 到 b），開門時往 to（±1）的 v 方向轉；axis 'v'：牆沿 v，往 to 的 u 方向轉。hinge：門軸在 a 端或 b 端。
+RB.DOORS = {};
+RB.setDoor = (id, k) => { const d = RB.DOORS[id]; if (d) d.pv.rotation.y = d.base + d.phi * k; };
+const doorId = (r, i) => r.f + '-' + (r.name || ('r' + r.u0)) + '-' + i;
+function doorLeaf(G, M, id, o) {
+  const w = o.b - o.a, s = o.hinge === 'b' ? -1 : 1, ha = s > 0 ? o.a : o.b, [hu, hv] = o.axis === 'u' ? [ha, o.c] : [o.c, ha];
+  const pv = new THREE.Group(), [x, y] = RB.uv2xy(hu, hv), base = RB.campusAngle + (o.axis === 'v' ? -Math.PI / 2 : 0); pv.position.set(x, RB.GROUND + o.h0, -y); pv.rotation.y = base;
+  const th = o.th || 0.045, h = o.h1 - o.h0;
+  const box = (m, x0, x1, y0, y1, z0, z1) => { const me = new THREE.Mesh(new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), m); me.position.set(s * (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2); me.castShadow = !m.transparent; me.receiveShadow = true; pv.add(me); };
+  if (o.glass) { for (const [x0, x1, y0, y1] of [[0, w, 0, 0.07], [0, w, h - 0.07, h], [0, 0.07, 0, h], [w - 0.07, w, 0, h], [0, w, 0.95, 1.0]]) box(M.frame, x0, x1, y0, y1, -th / 2, th / 2); box(M.glassDoor, 0.07, w - 0.07, 0.07, h - 0.07, -0.006, 0.006); }
+  else { box(o.mat || M.door, 0.01, w - 0.01, 0, h, -th / 2, th / 2); if (o.win) box(M.glass, w * 0.28, w * 0.72, h * 0.6, h * 0.86, -th / 2 - 0.003, th / 2 + 0.003); }
+  box(M.knob, w - 0.13, w - 0.07, h * 0.44, h * 0.47, -th / 2 - 0.06, th / 2 + 0.06);
+  G.add(pv); RB.DOORS[id] = { pv, base, phi: (o.axis === 'u' ? -s : s) * (o.to || 1) * (o.ang || 1.45) };
+}
 RB.buildSchool = () => {
-  PARTS.clear(); const G = new THREE.Group(), M = schoolMaterials(); RB.SM = M; const F = furniture();
+  PARTS.clear(); RB.DOORS = {}; const G = new THREE.Group(), M = schoolMaterials(); RB.SM = M; const F = furniture();
   let hs = 0, n = 0; for (let u = 0; u <= 126; u += 10) for (let v = 0; v <= 64; v += 8) { const [x, y] = RB.uv2xy(u, v); hs += RB.H(x, y); n++; } RB.GROUND = hs / n;
-  const { F1, F2, FH, EAVE, V0, V1, V2, UW, UE, PU, PV } = S_; const VI = V0 + 0.25, CEIL1 = F2 - 0.31, CEIL2 = EAVE - 0.31;
+  const { F1, F2, FH, EAVE, V0, V1, V2, UW, UE, PU, PV, WX, WS } = S_; const VI = V0 + 0.25, CEIL1 = F2 - 0.31, CEIL2 = EAVE - 0.31;
   const rowRooms = RB.ROOMS.filter(r => !r.x), STAIRS = [29.5, 70.2];
   const inst = (geo, mat, list, shadow) => { if (!list.length) return; const im = new THREE.InstancedMesh(geo, mat, list.length); list.forEach(([u, v, h, yaw], i) => { const [x, y] = RB.uv2xy(u, v); _p.set(x, RB.GROUND + h, -y); _q.setFromAxisAngle(_up, RB.campusAngle + (yaw || 0)); _m.compose(_p, _q, _s); im.setMatrixAt(i, _m); }); im.castShadow = shadow !== false; im.receiveShadow = true; G.add(im); };
   const L = { deskTop: [], deskBody: [], chair: [], fold: [], kidR: [], kidY: [], kidB: [], table: [], mtTop: [], mtBody: [], blue: [], round: [], shelf: [], bag: [], bag2: [], cases: [], packs: [], pcs: [], wallFan: [], ceilFan: [] };
   // ===== 北排教室大樓：地坪、樓板、屋頂 =====
-  obox(M.floor, UW, UE, V0, V1, 0, F1, [2, 2]); obox(M.floor, 29.5, UE, V1, V2, 0, F1, [2, 2]);       // 一樓（穿堂另鋪紅磚）
+  // 第四版（2026-11-14，依使用者在平面圖上畫的）：西端是 L 形——一樓辦公室（北）＋穿堂（南），二樓會議室＋校長室；
+  // 一樓走廊到西端往南轉，接風雨走廊；二樓從西側樓梯上來，右邊會議室、左邊玻璃門通走廊、正前方幾階小樓梯通到校長室。
+  const NB = { 1: [[UW, WX], [WX, 29.5], [32.7, 42], [42, 51.5], [51.5, 60.6], [60.6, 70.2], [73.4, UE]], 2: [[UW, 17.6], [17.6, 29.5], [32.7, 42], [42, 51.5], [51.5, 60.6], [60.6, 70.2], [73.4, UE]] };
+  obox(M.floor, UW, UE, V0, V1, 0, F1, [2, 2]); obox(M.floor, 29.5, UE, V1, V2, 0, F1, [2, 2]); obox(M.floor, UW, WX, V1, 14, 0, F1, [2, 2]);
   const slab = (u0, u1, v0, v1) => { obox(M.trim, u0, u1, v0, v1, F2 - 0.3, F2); obox(M.floor, u0, u1, v0, v1, F2, F2 + 0.01, [2, 2]); obox(M.ceil, u0, u1, v0, v1, CEIL1 - 0.0, CEIL1 + 0.01); };
   slab(UW, 29.5, V0 + 0.25, V2); slab(32.7, 70.2, V0 + 0.25, V2); slab(73.4, UE, V0 + 0.25, V2); for (const s of STAIRS) slab(s, s + 3.2, 11.8, V2);
-  obox(M.trim, UW, UE, V0, V0 + 0.25, F2 - 0.3, F2); obox(M.trim, 26, UE, V2 - 0.05, V2 + 0.1, F2 - 0.3, F2);
+  obox(M.trim, UW, UE, V0, V0 + 0.25, F2 - 0.3, F2); obox(M.trim, 32.7, UE, V2 - 0.05, V2 + 0.1, F2 - 0.3, F2);
   obox(M.trim, UW - 0.3, UE + 0.3, V0 - 0.3, V2 + 0.5, EAVE - 0.3, EAVE); obox(M.ceil, UW, UE, V0 + 0.25, V2, CEIL2, CEIL2 + 0.01);
   gableRoof(M.roof, UW, UE, V0, V2, EAVE, 2.2, 0.6);
   // 北外牆（大窗）
-  for (const fl of [1, 2]) { const hb = fl === 1 ? 0 : F2, ht = fl === 1 ? F2 - 0.3 : EAVE - 0.3, ops = []; for (const r of rowRooms.filter(r => r.f === fl && r.type !== 'stairs')) for (let a = r.u0 + 0.6; a < r.u1 - 1.0; a += 2.3) ops.push({ a, b: Math.min(a + 1.9, r.u1 - 0.5), lo: hb + 0.9, hi: hb + 2.8, glass: true }); for (const s of STAIRS) ops.push({ a: s + 0.6, b: s + 2.6, lo: hb + 1.6, hi: hb + 2.9, glass: true }); wallU(M, M.wall, V0, V0 + 0.25, UW, UE, hb, ht, ops); }
-  // 西端（辦公室／會議室的西牆有窗）、東端
-  for (const fl of [1, 2]) { const hb = fl === 1 ? 0 : F2, ht = fl === 1 ? F2 - 0.3 : EAVE - 0.3; wallV(M, M.wall, UW - 0.25, UW, V0, V1, hb, ht, [{ a: 4.2, b: 6.4, lo: hb + 0.9, hi: hb + 2.8, glass: true }, { a: 7.6, b: 9.8, lo: hb + 0.9, hi: hb + 2.8, glass: true }]); }
+  for (const fl of [1, 2]) { const hb = fl === 1 ? 0 : F2, ht = fl === 1 ? F2 - 0.3 : EAVE - 0.3, ops = []; for (const [a0, a1] of NB[fl]) for (let a = a0 + 0.6; a < a1 - 1.0; a += 2.3) ops.push({ a, b: Math.min(a + 1.9, a1 - 0.5), lo: hb + 0.9, hi: hb + 2.8, glass: true }); for (const s of STAIRS) ops.push({ a: s + 0.6, b: s + 2.6, lo: hb + 1.6, hi: hb + 2.9, glass: true }); wallU(M, M.wall, V0, V0 + 0.25, UW, UE, hb, ht, ops); }
+  // 西牆（一樓到辦公室南牆、二樓到 v=15）、東端
+  for (const fl of [1, 2]) { const hb = fl === 1 ? 0 : F2, ht = fl === 1 ? F2 - 0.3 : EAVE - 0.3; wallV(M, M.wall, UW - 0.25, UW, V0, fl === 1 ? 14 : V2, hb, ht, [{ a: 4.2, b: 6.4, lo: hb + 0.9, hi: hb + 2.8, glass: true }, { a: 7.6, b: 9.8, lo: hb + 0.9, hi: hb + 2.8, glass: true }, { a: 11.0, b: 12.8, lo: hb + 0.9, hi: hb + 2.8, glass: true }]); }
   obox(M.wall, UE, UE + 0.25, V0, V1, 0, EAVE - 0.3);
-  // 走廊側牆（門、高窗）、隔間、二樓走廊牆腳
+  // 走廊側牆（門、高窗）、隔間、二樓走廊牆腳；教室門是推門（往教室裡開），每間前後各一扇
   for (const r of rowRooms) { const hb = r.f === 1 ? 0 : F2, fl = r.f === 1 ? F1 : F2, ht = r.f === 1 ? F2 - 0.3 : EAVE - 0.3; if (r.type === 'stairs') continue;
-    const ops = [], gaps = []; for (const d of (r.d || [])) { ops.push({ a: d - 0.55, b: d + 0.55, lo: fl, hi: fl + 2.2 }); gaps.push([d - 0.6, d + 0.6]); obox(M.door, d - 0.6, d - 0.55, V1 - 0.2, V1, fl, fl + 2.2); obox(M.door, d + 0.55, d + 0.6, V1 - 0.2, V1, fl, fl + 2.2); obox(M.door, d - 0.6, d + 0.6, V1 - 0.2, V1, fl + 2.2, fl + 2.26); }
-    let cur = r.u0 + 0.4; const ds = (r.d || []).map(d => [d - 0.75, d + 0.75]); while (cur < r.u1 - 1.2) { const a = cur, b = Math.min(cur + 1.6, r.u1 - 0.4); if (!ds.some(([p, q]) => b > p && a < q)) ops.push({ a, b, lo: fl + 1.1, hi: fl + 2.4, glass: true }); cur += 2.0; }
+    const dw = r.type === 'toilet' ? 0.45 : 0.55, ops = [], gaps = [];
+    r.d.forEach((d, i) => { ops.push({ a: d - dw, b: d + dw, lo: fl, hi: fl + 2.2 }); gaps.push([d - dw - 0.05, d + dw + 0.05]); obox(M.door, d - dw - 0.05, d - dw, V1 - 0.2, V1, fl, fl + 2.2); obox(M.door, d + dw, d + dw + 0.05, V1 - 0.2, V1, fl, fl + 2.2); obox(M.door, d - dw - 0.05, d + dw + 0.05, V1 - 0.2, V1, fl + 2.2, fl + 2.26);
+      doorLeaf(G, M, doorId(r, i), { axis: 'u', a: d - dw, b: d + dw, c: V1 - 0.1, h0: fl, h1: fl + 2.18, hinge: 'a', to: -1, glass: r.glass, win: !r.glass }); });
+    let cur = r.u0 + 0.4; const ds = r.d.map(d => [d - 0.75, d + 0.75]); while (cur < r.u1 - 1.2) { const a = cur, b = Math.min(cur + 1.6, r.u1 - 0.4); if (!ds.some(([p, q]) => b > p && a < q)) ops.push({ a, b, lo: fl + 1.1, hi: fl + 2.4, glass: true }); cur += 2.0; }
     wallU(M, M.wall, V1 - 0.2, V1, r.u0, r.u1, hb, ht, ops);
     if (r.f === 2 && r.u0 >= 29.5) dadoU(M.dado, V1, 1, r.u0, r.u1, fl, fl + 1.1, gaps);
-    if (r.u0 > UW) { if (r.f === 2 && r.u0 === 42.0) obox(M.curtain2, r.u0 - 0.03, r.u0 + 0.03, VI, V1 - 0.2, fl, fl + 3.1); else obox(M.wallIn, r.u0 - 0.1, r.u0 + 0.1, VI, V1 - 0.2, hb, ht); }
-    // 門上方的教室牌（凸出走廊，橘底白字）
-    if (r.d && r.type !== 'toilet') { const sm = textMat(r.name, { w: 256, h: 96, bg: '#e8892c', fg: '#ffffff', size: 52 }); obox(sm, r.d[0] - 0.02, r.d[0] + 0.02, V1, V1 + 0.62, fl + 2.45, fl + 2.7); }
+    if (r.u0 > WX) { if (r.f === 2 && r.u0 === 42.0) obox(M.curtain2, r.u0 - 0.03, r.u0 + 0.03, VI, V1 - 0.2, fl, fl + 3.1); else obox(M.wallIn, r.u0 - 0.1, r.u0 + 0.1, VI, V1 - 0.2, hb, ht); }
+    // 門上方的教室牌（凸出走廊，橘底白字）；廁所：男（左）、女（右）
+    if (r.type === 'toilet') { obox(textMat('男', { w: 96, h: 96, bg: '#2f6fd0', fg: '#ffffff', size: 64 }), r.d[0] - 0.02, r.d[0] + 0.02, V1, V1 + 0.42, fl + 2.4, fl + 2.82); obox(textMat('女', { w: 96, h: 96, bg: '#d9433a', fg: '#ffffff', size: 64 }), r.d[1] - 0.02, r.d[1] + 0.02, V1, V1 + 0.42, fl + 2.4, fl + 2.82); }
+    else if (r.d.length && r.name) { const sm = textMat(r.name, { w: 256, h: 96, bg: '#e8892c', fg: '#ffffff', size: 52 }); obox(sm, r.d[r.d.length - 1] - 0.02, r.d[r.d.length - 1] + 0.02, V1, V1 + 0.62, fl + 2.45, fl + 2.7); }
   }
-  // 樓梯間（兩座：辦公室旁、廁所旁）：兩跑，第一跑往北升到平台、第二跑往南到二樓
+  // 樓梯間（兩座：西端、廁所旁）：兩跑，第一跑往北升到平台、第二跑往南到二樓
   for (const s of STAIRS) { obox(M.wallIn, s - 0.1, s + 0.1, VI, V1 - 0.2, 0, EAVE - 0.3); obox(M.wallIn, s + 3.1, s + 3.3, VI, V1 - 0.2, 0, EAVE - 0.3);
     const half = (F2 - F1) / 2, nst = 12, run = 0.28; for (let i = 0; i < nst; i++) { const v = 11.8 - (i + 1) * run; obox(M.floor, s + 0.1, s + 1.6, v, v + run, F1, F1 + half * (i + 1) / nst, [2, 2]); obox(M.floor, s + 1.6, s + 3.1, 8.44 + i * run, 8.44 + (i + 1) * run, F1, F1 + half + half * (i + 1) / nst, [2, 2]); }
     obox(M.floor, s + 0.1, s + 3.1, 6.6, 8.44, F1, F1 + half, [2, 2]); obox(M.rail, s + 1.57, s + 1.63, 8.44, 11.8, F1 + 0.9, F1 + 1.0 + half); obox(M.wallIn, s + 0.1, s + 3.1, VI, 6.6, 0, EAVE - 0.3);
     obox(M.rail, s + 0.12, s + 3.08, 11.75, 11.82, F2 + 0.9, F2 + 0.96); }
   // 天花板日光燈、壁扇
   for (const r of rowRooms) { if (r.type === 'stairs') continue; const ceil = r.f === 1 ? CEIL1 : CEIL2, fl = r.f === 1 ? F1 : F2; for (let u = r.u0 + 1.4; u < r.u1 - 1; u += 2.4) for (const v of [5.0, 9.0]) { obox(M.light, u, u + 1.2, v, v + 0.12, ceil - 0.12, ceil - 0.08); obox(M.metal, u + 0.1, u + 0.12, v + 0.05, v + 0.07, ceil - 0.08, ceil); obox(M.metal, u + 1.08, u + 1.1, v + 0.05, v + 0.07, ceil - 0.08, ceil); }
-    if (r.type !== 'toilet') for (const u of [r.u0 + 2.5, r.u1 - 2.5]) L.wallFan.push([u, VI, fl + 2.6, 0]); }
-  for (let u = 27; u < UE; u += 4.6) for (const fl of [1, 2]) obox(M.light, u, u + 1.2, 13.55, 13.67, (fl === 1 ? CEIL1 : CEIL2) - 0.06, (fl === 1 ? CEIL1 : CEIL2));
-  // 走廊柱子；二樓走廊外側：女兒牆＋欄杆，圖書室到英語教室這段整排窗（兩端有透明門）
-  for (const u of [26, 29.5, 32.7, 37.35, 42, 46.75, 51.5, 56.05, 60.6, 65.4, 70.2, 73.4, 77]) obox(M.column, u - 0.22, u + 0.22, V2 - 0.45, V2, 0, EAVE - 0.3);
-  obox(M.wall, 26, UE, V2 - 0.15, V2, F2, F2 + 0.95); obox(M.trim, 26, UE, V2 - 0.35, V2 + 0.05, 0, F1 + 0.05);
-  obox(M.rail, 26, 32.7, V2 - 0.12, V2 + 0.02, F2 + 0.95, F2 + 1.02); obox(M.rail, 51.5, UE, V2 - 0.12, V2 + 0.02, F2 + 0.95, F2 + 1.02);
+    if (r.type !== 'toilet' && r.type !== 'other') for (const u of [r.u0 + 2.5, r.u1 - 2.5]) L.wallFan.push([u, VI, fl + 2.6, 0]); }
+  for (let u = 23; u < UE; u += 4.6) obox(M.light, u, u + 1.2, 13.55, 13.67, CEIL1 - 0.06, CEIL1); for (let u = 33.5; u < UE; u += 4.6) obox(M.light, u, u + 1.2, 13.55, 13.67, CEIL2 - 0.06, CEIL2);
+  // 走廊柱子；二樓走廊外側：女兒牆＋欄杆，圖書室到英語教室這段整排窗；玻璃門在圖書室西邊（通往樓梯口）
+  for (const u of [WX, 24.6, 29.5, 32.7, 37.35, 42, 46.75, 51.5, 56.05, 60.6, 65.4, 70.2, 73.4, 77]) obox(M.column, u - 0.22, u + 0.22, V2 - 0.45, V2, 0, F2 - 0.3);
+  for (const u of [32.7, 37.35, 42, 46.75, 51.5, 56.05, 60.6, 65.4, 70.2, 73.4, 77]) obox(M.column, u - 0.22, u + 0.22, V2 - 0.45, V2, F2, EAVE - 0.3);
+  obox(M.wall, 32.7, UE, V2 - 0.15, V2, F2, F2 + 0.95); obox(M.trim, 24.6, UE, V2 - 0.35, V2 + 0.05, 0, F1 + 0.05);
+  obox(M.rail, 51.5, UE, V2 - 0.12, V2 + 0.02, F2 + 0.95, F2 + 1.02);
   for (let a = 32.95; a < 51.3; a += 2.32) winU(M, a, Math.min(a + 2.2, 51.3), V2 - 0.08, F2 + 0.95, CEIL2 - 0.05); obox(M.trim, 32.7, 51.5, V2 - 0.15, V2, CEIL2 - 0.05, CEIL2);
-  for (const ug of [32.7, 51.5]) { // 透明門（白框玻璃雙開門，開著讓人通過；門楣上方是玻璃）
-    obox(M.frame, ug - 0.05, ug + 0.05, V1, V1 + 0.12, F2, CEIL2); obox(M.frame, ug - 0.05, ug + 0.05, V2 - 0.27, V2 - 0.15, F2, CEIL2); obox(M.frame, ug - 0.05, ug + 0.05, V1 + 0.12, V2 - 0.27, F2 + 2.3, F2 + 2.36); obox(M.glass, ug - 0.01, ug + 0.01, V1 + 0.12, V2 - 0.27, F2 + 2.36, CEIL2);
-    for (const [va, vb] of [[V1 + 0.14, V1 + 0.2], [V2 - 0.35, V2 - 0.29]]) { obox(M.glass, ug + 0.06, ug + 1.2, va + 0.02, vb - 0.02, F2 + 0.02, F2 + 2.26); obox(M.frame, ug + 0.06, ug + 1.2, va, vb, F2 + 0.02, F2 + 0.08); obox(M.frame, ug + 0.06, ug + 1.2, va, vb, F2 + 2.2, F2 + 2.26); obox(M.frame, ug + 1.14, ug + 1.2, va, vb, F2 + 0.02, F2 + 2.26); } }
+  { const ug = 32.7; obox(M.frame, ug - 0.05, ug + 0.05, V1, V1 + 0.12, F2, CEIL2); obox(M.frame, ug - 0.05, ug + 0.05, V2 - 0.27, V2 - 0.15, F2, CEIL2); obox(M.frame, ug - 0.05, ug + 0.05, V1 + 0.12, V2 - 0.27, F2 + 2.3, F2 + 2.36); obox(M.glass, ug - 0.01, ug + 0.01, V1 + 0.12, V2 - 0.27, F2 + 2.36, CEIL2);
+    const w = (V2 - 0.27 - V1 - 0.12) / 2; doorLeaf(G, M, 'glass2a', { axis: 'v', a: V1 + 0.12, b: V1 + 0.12 + w, c: ug, h0: F2, h1: F2 + 2.28, hinge: 'a', to: 1, glass: true }); doorLeaf(G, M, 'glass2b', { axis: 'v', a: V2 - 0.27 - w, b: V2 - 0.27, c: ug, h0: F2, h1: F2 + 2.28, hinge: 'b', to: 1, glass: true }); }
+  // 廁所正對面（走廊外側）的洗手台，一、二樓都有
+  for (const fl of [F1, F2]) { obox(M.tileW, 73.75, 76.65, 14.0, 14.5, fl, fl + 0.82); for (const u of [74.3, 75.2, 76.1]) obox(M.metal, u - 0.02, u + 0.02, 14.1, 14.35, fl + 0.82, fl + 1.05); }
 
-  // ===== 西端：辦公室（一樓）/ 會議室（二樓）南側突出的「穿堂」（一樓）/「校長室」（二樓） =====
-  obox(M.paver, UW, PU, V1, PV, 0, F1, [3, 3]); obox(M.paver, PU, 29.5, V1, V2, 0, F1, [3, 3]);
-  obox(M.trim, UW, PU, V2, PV, F2 - 0.3, F2); obox(M.floor, UW, PU, V2, PV, F2, F2 + 0.01, [2, 2]);
-  panel(M.hallCeil, 'h', UW, PU, V1, PV, CEIL1 - 0.01, 1);                     // 穿堂彩色天花板
-  for (const [u, v] of [[UW + 0.3, PV - 0.3], [17.6, PV - 0.3], [21.8, PV - 0.3], [PU - 0.3, PV - 0.3], [UW + 0.3, 17.6], [PU - 0.3, 17.6]]) obox(M.hallCol, u - 0.28, u + 0.28, v - 0.28, v + 0.28, F1, CEIL1, [1.12, 1.6]);
-  obox(M.led, 20.2, 23.8, V1 + 0.01, V1 + 0.1, F1 + 2.55, F1 + 2.95); obox(M.bulletin, 14.0, 16.4, V1, V1 + 0.04, F1 + 1.0, F1 + 2.2);
-  L.wallFan.push([18.8, V1 + 0.02, F1 + 2.5, 0]);
-  // 校長室（二樓，穿堂正上方）：北牆有門對走廊、南西兩面窗、西側陽台掛布條
-  { const fl = F2, ht = EAVE - 0.3; wallU(M, M.wall, V2, V2 + 0.2, UW, PU, F2, ht, [{ a: 24.05, b: 25.15, lo: fl, hi: fl + 2.2 }, { a: 15.0, b: 16.6, lo: fl + 1.1, hi: fl + 2.4, glass: true }, { a: 19.4, b: 21.0, lo: fl + 1.1, hi: fl + 2.4, glass: true }]);
-    dadoU(M.dado, V2, -1, UW, PU, fl, fl + 1.1, [[23.95, 25.25]]);
-    wallU(M, M.wall, PV - 0.25, PV, UW, PU, F2, ht, [{ a: 14.6, b: 16.8, lo: fl + 0.9, hi: fl + 2.8, glass: true }, { a: 18.6, b: 20.8, lo: fl + 0.9, hi: fl + 2.8, glass: true }, { a: 22.6, b: 24.8, lo: fl + 0.9, hi: fl + 2.8, glass: true }]);
-    wallV(M, M.wall, UW - 0.25, UW, V2, PV, F2, ht, [{ a: 16.0, b: 19.6, lo: fl + 0.9, hi: fl + 2.8, glass: true }]); wallV(M, M.wall, PU - 0.25, PU, V2, PV, F2, ht);
-    obox(M.trim, UW - 0.2, PU + 0.2, V2, PV + 0.2, EAVE - 0.3, EAVE); obox(M.ceil, UW, PU, V2 + 0.2, PV - 0.25, CEIL2, CEIL2 + 0.01); obox(M.wall, UW - 0.2, PU + 0.2, PV, PV + 0.2, EAVE, EAVE + 0.9); obox(M.wall, UW - 0.2, UW, V2, PV + 0.2, EAVE, EAVE + 0.9); obox(M.wall, PU, PU + 0.2, V2, PV + 0.2, EAVE, EAVE + 0.9);
-    panel(M.sign, 'u', 14.2, 24.6, EAVE + 0.05, EAVE + 0.85, PV + 0.21, 1);
-    // 浴室（西側）
-    wallU(M, M.wallIn, 18.0, 18.12, UW, 17.0, fl, fl + 3.1, [{ a: 15.6, b: 16.5, lo: fl, hi: fl + 2.1 }]); obox(M.wallIn, 16.95, 17.07, 18.0, PV - 0.25, fl, fl + 3.1); obox(M.tileW, UW, 17.0, 18.1, PV - 0.25, fl, fl + 0.02); obox(M.tileW, UW + 0.02, UW + 0.04, 18.1, PV - 0.25, fl, fl + 1.8);
-    obox(M.desk, 19.6, 21.6, 19.2, 20.0, fl, fl + 0.78); L.pcs.push([20.6, 19.5, fl, Math.PI]); L.chair.push([20.6, 18.6, fl, Math.PI]);
-    obox(M.sofa, 17.6, 20.4, 15.5, 16.4, fl, fl + 0.45); obox(M.sofa, 17.6, 20.4, 15.4, 15.6, fl, fl + 0.85); obox(M.desk, 18.2, 19.8, 16.8, 17.6, fl, fl + 0.42); obox(M.cabinet, 22.0, 25.6, PV - 0.65, PV - 0.27, fl, fl + 1.9);
-    for (const u of [16.5, 21.5]) obox(M.light, u, u + 1.2, 18.0, 18.12, CEIL2 - 0.12, CEIL2 - 0.08); }
+  // ===== 西端 L 形 =====
+  // 一樓辦公室（u 13–21.4、v 2–14）：南牆對著穿堂、東牆有門對著走廊轉角
+  { const ht = F2 - 0.3; wallU(M, M.wall, 13.8, 14.0, UW, WX, 0, ht, [{ a: 14.6, b: 16.6, lo: F1 + 0.9, hi: F1 + 2.4, glass: true }, { a: 17.6, b: 19.6, lo: F1 + 0.9, hi: F1 + 2.4, glass: true }]);
+    wallV(M, M.wall, WX - 0.2, WX, V0, 14.0, 0, ht, [{ a: 12.6, b: 13.7, lo: F1, hi: F1 + 2.2 }, { a: 4.0, b: 5.6, lo: F1 + 1.1, hi: F1 + 2.4, glass: true }, { a: 7.6, b: 9.2, lo: F1 + 1.1, hi: F1 + 2.4, glass: true }]);
+    doorLeaf(G, M, 'office', { axis: 'v', a: 12.6, b: 13.7, c: WX - 0.1, h0: F1, h1: F1 + 2.18, hinge: 'a', to: -1, win: true });
+    obox(M.cabinet, 14.0, 20.8, VI, VI + 0.45, F1, F1 + 1.9); for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const u = 14.6 + i * 2.2, v = 5.0 + j * 3.4; obox(M.tdesk, u, u + 1.4, v, v + 0.75, F1, F1 + 0.76); L.pcs.push([u + 0.7, v + 0.2, F1, 0]); L.chair.push([u + 0.7, v + 1.15, F1, Math.PI]); } }
+  // 一樓穿堂（u 13–21.4、v 14–22）：紅磚地、彩色天花板、彩繪柱；東邊接走廊轉角（往南接風雨走廊）
+  obox(M.paver, UW, WX, 14, WS, 0, F1, [3, 3]); obox(M.paver, WX, 24.6, V1, WS, 0, F1, [3, 3]); obox(M.paver, 24.6, 29.5, V1, V2, 0, F1, [3, 3]);
+  panel(M.hallCeil, 'h', UW, WX, 14, WS, CEIL1 - 0.01, 1); obox(M.ceil, WX, 32.7, V2, 17.4, CEIL1, CEIL1 + 0.01); obox(M.ceil, WX, 24.6, 17.4, WS, CEIL1, CEIL1 + 0.01);
+  for (const [u, v] of [[UW + 0.3, WS - 0.3], [17.2, WS - 0.3], [WX - 0.3, WS - 0.3], [UW + 0.3, 18.0]]) obox(M.hallCol, u - 0.28, u + 0.28, v - 0.28, v + 0.28, F1, CEIL1, [1.12, 1.6]);
+  for (const [u, v] of [[24.4, 17.2], [24.4, WS - 0.2], [28.6, 17.2], [32.5, 17.2]]) obox(M.column, u - 0.2, u + 0.2, v - 0.2, v + 0.2, 0, F2);
+  obox(M.led, 15.4, 19.0, 14.0, 14.09, F1 + 2.55, F1 + 2.95); obox(M.bulletin, 13.8, 16.2, 14.0, 14.04, F1 + 0.9, F1 + 2.1);
+  // 二樓：會議室（u 17.6–29.5、v 2–15）：門在東牆，正對走廊的玻璃門；西邊另一間（不開放）
+  { const fl = F2, ht = EAVE - 0.3;
+    obox(M.wallIn, 17.5, 17.7, VI, V2 - 0.2, F2, ht);
+    wallU(M, M.wall, V2 - 0.2, V2, UW, 29.6, F2, ht, [{ a: 22.0, b: 24.0, lo: fl + 1.1, hi: fl + 2.4, glass: true }, { a: 25.6, b: 27.6, lo: fl + 1.1, hi: fl + 2.4, glass: true }]);
+    wallV(M, M.wall, 29.4, 29.6, V1 - 0.2, V2 - 0.2, F2, ht, [{ a: 12.9, b: 14.1, lo: fl, hi: fl + 2.2 }]);
+    doorLeaf(G, M, 'meet', { axis: 'v', a: 12.9, b: 14.1, c: 29.5, h0: fl, h1: fl + 2.18, hinge: 'a', to: -1, win: true });
+    const sm = textMat('會議室', { w: 256, h: 96, bg: '#e8892c', fg: '#ffffff', size: 52 }); obox(sm, 29.6, 30.2, 13.5 - 0.02, 13.5 + 0.02, fl + 2.45, fl + 2.7);
+    // 長方形會議桌（南北向）、藍椅子、白板、冷氣、吊扇、吹風機
+    obox(M.mtTop, 22.4, 25.2, 4.8, 12.0, fl + 0.72, fl + 0.77); for (const [u, v] of [[22.6, 5.0], [25.0, 5.0], [22.6, 11.8], [25.0, 11.8]]) obox(M.metal, u - 0.03, u + 0.03, v - 0.03, v + 0.03, fl, fl + 0.72);
+    for (let v = 5.4; v < 11.8; v += 0.9) { L.blue.push([21.85, v, fl, Math.PI / 2]); L.blue.push([25.75, v, fl, -Math.PI / 2]); } L.blue.push([23.8, 12.6, fl, Math.PI]); L.blue.push([23.8, 4.2, fl, 0]);
+    obox(M.white, 17.75, 17.85, 5.5, 8.5, fl + 0.8, fl + 1.9); obox(M.ac, 22.0, 22.9, VI, VI + 0.24, fl + 2.55, fl + 2.85); L.ceilFan.push([20.5, 8.4, CEIL2 - 0.4, 0]); L.ceilFan.push([26.6, 8.4, CEIL2 - 0.4, 0.6]); obox(M.cabinet, 27.4, 29.2, VI, VI + 0.45, fl, fl + 1.9);
+    obox(M.desk, 27.6, 29.2, 13.9, 14.6, fl, fl + 0.78); for (const u of [27.9, 28.6]) obox(M.ac, u, u + 0.32, 14.05, 14.3, fl + 0.78, fl + 0.98);   // 吹風機（放在門邊小桌）
+    for (let u = 18.4; u < 29; u += 2.6) for (const v of [5.0, 9.6]) obox(M.light, u, u + 1.2, v, v + 0.12, CEIL2 - 0.12, CEIL2 - 0.08); }
+  // 二樓樓梯口往南：幾階小樓梯（+0.45 m）→ 通道往西 → 沿西翼東側往南 → 右手邊是校長室的門
+  { const fl = F2, up = 0.45, FP = F2 + up, ht = EAVE - 0.3;
+    for (let k = 0; k < 3; k++) obox(M.floor, 29.6, 32.6, V2 + k * 0.4, V2 + (k + 1) * 0.4, F2 - 0.3, F2 + up * (k + 1) / 3, [2, 2]);
+    obox(M.trim, WX, 29.6, V2, 17.4, F2 - 0.3, FP - 0.01); obox(M.floor, WX, 29.6, V2, 17.4, FP - 0.01, FP, [2, 2]); obox(M.trim, WX, 24.6, 17.4, WS, F2 - 0.3, FP - 0.01); obox(M.floor, WX, 24.6, 17.4, WS, FP - 0.01, FP, [2, 2]);
+    obox(M.trim, 29.6, 32.7, V2 + 1.2, 17.4, F2 - 0.3, FP - 0.01); obox(M.floor, 29.6, 32.6, V2 + 1.2, 17.4, FP - 0.01, FP, [2, 2]);
+    wallU(M, M.wall, 17.2, 17.4, 24.4, 32.7, F2 - 0.3, ht, [{ a: 25.4, b: 27.4, lo: FP + 0.9, hi: FP + 2.3, glass: true }, { a: 28.6, b: 30.6, lo: FP + 0.9, hi: FP + 2.3, glass: true }]);
+    wallV(M, M.wall, 32.5, 32.7, V2, 17.4, F2 - 0.3, ht, [{ a: 15.4, b: 17.0, lo: FP + 0.9, hi: FP + 2.3, glass: true }]);
+    wallV(M, M.wall, 24.4, 24.6, 17.4, WS, F2 - 0.3, ht, [{ a: 18.4, b: 20.6, lo: FP + 0.9, hi: FP + 2.3, glass: true }]);
+    wallU(M, M.wall, WS - 0.2, WS, WX, 24.6, F2 - 0.3, ht, [{ a: 22.2, b: 23.8, lo: FP + 0.9, hi: FP + 2.3, glass: true }]);
+    obox(M.ceil, WX, 32.7, V2, 17.4, CEIL2, CEIL2 + 0.01); obox(M.ceil, WX, 24.6, 17.4, WS, CEIL2, CEIL2 + 0.01); obox(M.trim, WX - 0.2, 32.9, V2, 17.6, EAVE - 0.3, EAVE); obox(M.trim, WX - 0.2, 24.8, 17.4, WS + 0.2, EAVE - 0.3, EAVE);
+    for (const [u, v] of [[23.0, 16.2], [27.4, 16.2], [23.0, 19.6]]) obox(M.light, u, u + 1.2, v, v + 0.12, CEIL2 - 0.12, CEIL2 - 0.08);
+    // 校長室（u 13–21.4、v 15–22，地板 +0.45）：東牆有門（推門）；北邊綠色牆＋綠色門（外門）→ 內門 → 廁所
+    obox(M.trim, UW, WX, V2, WS, F2 - 0.3, FP - 0.01); obox(M.floor, UW, WX, V2, WS, FP - 0.01, FP, [2, 2]);
+    wallV(M, M.wall, WX - 0.2, WX, V2, WS, F2, ht, [{ a: 20.1, b: 21.2, lo: FP, hi: FP + 2.2 }]);
+    doorLeaf(G, M, 'prin', { axis: 'v', a: 20.1, b: 21.2, c: WX - 0.1, h0: FP, h1: FP + 2.18, hinge: 'b', to: -1, win: true });
+    const sm = textMat('校長室', { w: 256, h: 96, bg: '#e8892c', fg: '#ffffff', size: 52 }); obox(sm, WX, WX + 0.6, 21.9 - 0.02, 21.9 + 0.02, FP + 2.45, FP + 2.7);
+    wallU(M, M.wall, WS - 0.25, WS, UW - 0.25, WX, F2, ht, [{ a: 14.6, b: 16.8, lo: FP + 0.8, hi: FP + 2.6, glass: true }, { a: 17.8, b: 20.0, lo: FP + 0.8, hi: FP + 2.6, glass: true }]);
+    wallV(M, M.wall, UW - 0.25, UW, V2, WS, F2, ht, [{ a: 18.0, b: 21.0, lo: FP + 0.8, hi: FP + 2.6, glass: true }]);
+    wallU(M, M.doorGreen, 17.3, 17.42, UW, 18.4, FP, CEIL2, [{ a: 15.4, b: 16.3, lo: FP, hi: FP + 2.1 }]); obox(M.doorGreen, 18.3, 18.42, V2 + 0.2, 17.42, FP, CEIL2);
+    doorLeaf(G, M, 'prinWC1', { axis: 'u', a: 15.4, b: 16.3, c: 17.36, h0: FP, h1: FP + 2.08, hinge: 'a', to: -1, mat: M.doorGreen });
+    wallU(M, M.wallIn, 16.2, 16.3, UW, 18.3, FP, CEIL2, [{ a: 15.4, b: 16.2, lo: FP, hi: FP + 2.05 }]); doorLeaf(G, M, 'prinWC2', { axis: 'u', a: 15.4, b: 16.2, c: 16.25, h0: FP, h1: FP + 2.03, hinge: 'a', to: -1 });
+    obox(M.tileW, UW, 18.3, V2 + 0.2, 16.2, FP, FP + 0.02);
+    // L 型沙發（北側）、茶几、校長辦公桌（南側，團本在這裡工作）、櫃子
+    obox(M.sofa, 14.6, 18.0, 17.65, 18.45, FP, FP + 0.45); obox(M.sofa, 14.6, 18.0, 17.5, 17.7, FP, FP + 0.85); obox(M.sofa, 17.3, 18.1, 17.65, 19.6, FP, FP + 0.45); obox(M.sofa, 17.9, 18.1, 17.5, 19.6, FP, FP + 0.85);
+    { const g = new THREE.CylinderGeometry(0.6, 0.6, 0.06, 24); g.scale(1.3, 1, 0.8); place(M.desk, g, 15.4, 19.0, FP + 0.42, 0); obox(M.metal, 15.35, 15.45, 18.95, 19.05, FP, FP + 0.4); }
+    obox(M.desk, 14.4, 18.0, 20.3, 21.2, FP, FP + 0.78); L.pcs.push([15.4, 20.6, FP, Math.PI]); L.pcs.push([16.9, 20.6, FP, Math.PI]); L.chair.push([15.4, 21.55, FP, Math.PI]); L.chair.push([16.9, 21.55, FP, Math.PI]);
+    obox(M.cabinet, 18.6, 21.0, 17.6, 18.0, FP, FP + 1.9);
+    for (const u of [15.0, 18.6]) obox(M.light, u, u + 1.2, 19.6, 19.72, CEIL2 - 0.12, CEIL2 - 0.08);
+    obox(M.trim, UW - 0.2, WX, V2, WS + 0.2, EAVE - 0.3, EAVE); obox(M.ceil, UW, WX, V2 + 0.2, WS - 0.25, CEIL2, CEIL2 + 0.01); }
   // 二樓西側陽台（從大門看得到的那個，掛彩色布條）
-  obox(M.trim, UW - 1.2, UW, V1, PV, F2 - 0.3, F2); obox(M.floor, UW - 1.2, UW, V1, PV, F2, F2 + 0.01, [2, 2]); obox(M.wall, UW - 1.2, UW - 1.05, V1, PV, F2, F2 + 1.0); obox(M.wall, UW - 1.2, UW, V1 - 0.15, V1, F2, F2 + 1.0); obox(M.wall, UW - 1.2, UW, PV, PV + 0.15, F2, F2 + 1.0);
-  panel(M.banner, 'v', V1 + 0.6, PV - 0.6, F2 + 0.1, F2 + 0.9, UW - 1.22, 1);
-  // 一樓穿堂西側（走廊盡頭）開放；二樓走廊西端通到陽台
-  for (const fl of [1, 2]) obox(M.column, UW - 0.22, UW + 0.22, V2 - 0.45, V2, fl === 1 ? 0 : F2, fl === 1 ? F2 - 0.3 : EAVE - 0.3);
+  obox(M.trim, UW - 1.2, UW, V1, WS, F2 - 0.3, F2); obox(M.floor, UW - 1.2, UW, V1, WS, F2, F2 + 0.01, [2, 2]); obox(M.wall, UW - 1.2, UW - 1.05, V1, WS, F2, F2 + 1.0); obox(M.wall, UW - 1.2, UW, V1 - 0.15, V1, F2, F2 + 1.0); obox(M.wall, UW - 1.2, UW, WS, WS + 0.15, F2, F2 + 1.0);
+  panel(M.banner, 'v', V1 + 0.6, WS - 0.6, F2 + 0.1, F2 + 0.9, UW - 1.22, 1);
+  panel(M.sign, 'u', 14.2, 20.4, EAVE + 0.05, EAVE + 0.85, WS + 0.21, 1); obox(M.wall, UW - 0.2, WX + 0.2, WS, WS + 0.2, EAVE, EAVE + 0.9);
 
   // ===== 室內 =====
+  const desks6 = (uc, vc, fl, rot) => { for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const u = uc + (i - 1) * 0.62, v = vc + (j - 0.5) * 0.46; L.deskTop.push([u, v, fl, 0]); L.deskBody.push([u, v, fl, 0]); L.chair.push([u, vc + (j ? 0.85 : -0.85), fl, j ? Math.PI : 0]); } };
   for (const r of rowRooms) { const fl = r.f === 1 ? F1 : F2, um = (r.u0 + r.u1) / 2, ceil = r.f === 1 ? CEIL1 : CEIL2;
-    if (r.type === 'class' || r.type === 'sleep' || r.type === 'english') {
-      // 前方（東牆）黑板、電視、老師桌；後方（西牆）布告欄、置物櫃、時鐘
-      obox(M.boardFrame, r.u1 - 0.16, r.u1 - 0.1, 3.9, 10.1, fl + 0.85, fl + 2.15); obox(M.board, r.u1 - 0.18, r.u1 - 0.1, 4.0, 10.0, fl + 0.9, fl + 2.1); obox(M.boardFrame, r.u1 - 0.35, r.u1 - 0.1, 4.0, 10.0, fl + 0.86, fl + 0.9);
-      obox(M.tv, r.u1 - 0.22, r.u1 - 0.18, 5.6, 7.3, fl + 1.1, fl + 2.05); obox(M.screen, r.u1 - 0.225, r.u1 - 0.22, 5.66, 7.24, fl + 1.16, fl + 1.99);
+    if (r.type === 'class' || r.type === 'class4' || r.type === 'sleep' || r.type === 'english') {
+      // 前方（東牆）黑板（英語教室是白板、沒有電視）、老師桌；後方（西牆）布告欄、置物櫃、時鐘
+      if (r.type === 'english') { obox(M.boardFrame, r.u1 - 0.16, r.u1 - 0.1, 4.4, 9.6, fl + 0.85, fl + 2.15); obox(M.white, r.u1 - 0.18, r.u1 - 0.1, 4.5, 9.5, fl + 0.9, fl + 2.1); }
+      else { obox(M.boardFrame, r.u1 - 0.16, r.u1 - 0.1, 3.9, 10.1, fl + 0.85, fl + 2.15); obox(M.board, r.u1 - 0.18, r.u1 - 0.1, 4.0, 10.0, fl + 0.9, fl + 2.1); obox(M.boardFrame, r.u1 - 0.35, r.u1 - 0.1, 4.0, 10.0, fl + 0.86, fl + 0.9);
+        obox(M.tv, r.u1 - 0.22, r.u1 - 0.18, 5.6, 7.3, fl + 1.1, fl + 2.05); obox(M.screen, r.u1 - 0.225, r.u1 - 0.22, 5.66, 7.24, fl + 1.16, fl + 1.99); }
       obox(M.tdesk, r.u1 - 1.9, r.u1 - 0.8, 2.6, 3.6, fl, fl + 0.76);
       obox(M.bulletinRow, r.u0 + 0.1, r.u0 + 0.14, 3.0, 11.0, fl + 1.15, fl + 2.55); obox(M.locker, r.u0 + 0.1, r.u0 + 0.5, 3.0, 11.0, fl, fl + 0.9); panel(M.clock, 'v', 6.8, 7.2, fl + 2.65, fl + 3.05, r.u0 + 0.15, -1);
-      if (r.type === 'class') { // 營隊期間：一間兩個小隊，各併成 8 張的大桌
-        for (const k of [0.3, 0.7]) { const uc = r.u0 + (r.u1 - r.u0) * k, vc = 7.0; for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { const u = uc + (i - 1.5) * 0.62, v = vc + (j - 0.5) * 0.46; L.deskTop.push([u, v, fl, 0]); L.deskBody.push([u, v, fl, 0]); L.chair.push([u, vc + (j ? 0.85 : -0.85), fl, j ? Math.PI : 0]); } }
+      if (r.type === 'class') { // 一到三年級：前半間兩組，各 6 張桌子併在一起
+        desks6(r.u1 - 2.7, 6.3, fl); desks6(r.u1 - 2.7, 9.7, fl);
         for (let k = 0; k < 6; k++) L.chair.push([r.u0 + 0.75, 3.4 + k * 0.5, fl, Math.PI / 2]); }   // 教室後面的摺疊小椅子
+      else if (r.type === 'class4') { desks6(35.9, 5.75, fl); desks6(39.0, 5.3, fl); desks6(35.8, 9.35, fl); desks6(39.0, 8.8, fl); }   // 四年級（哥姐休息）：四組
       else if (r.type === 'sleep') { // 桌椅靠北牆，地上鋪睡袋
         for (let i = 0; i < 12; i++) { const u = r.u0 + 1.0 + i * 0.64; if (u > r.u1 - 1.2) break; for (const v of [2.75, 3.25]) { L.deskTop.push([u, v, fl, 0]); L.deskBody.push([u, v, fl, 0]); } }
         for (let k = 0; k < 10; k++) (k % 2 ? L.bag2 : L.bag).push([r.u0 + 1.4 + (k % 5) * 1.6, 6.2 + Math.floor(k / 5) * 2.4, fl, Math.PI / 2]); }
-      else { // 英語教室：桌椅靠牆，中間放行李
-        for (let i = 0; i < 12; i++) { const u = r.u0 + 1.0 + i * 0.64; if (u > r.u1 - 1.2) break; L.deskTop.push([u, 2.75, fl, 0]); L.deskBody.push([u, 2.75, fl, 0]); }
-        for (let k = 0; k < 24; k++) { const u = r.u0 + 1.2 + (k % 8) * 0.75, v = 4.6 + Math.floor(k / 8) * 1.4; (k % 3 ? L.cases : L.packs).push([u, v, fl, (k % 5) * 0.2]); } } }
-    if (r.type === 'library') { // 木地板、矮書櫃、壁畫、圓桌與彩色小椅子、睡袋
-      obox(M.woodFloor, r.u0 + 0.1, r.u1 - 0.1, VI, V1 - 0.2, fl, fl + 0.02, [3, 3]);
+      else { // 英語教室：桌子併成五組（5、5、3、6、6 張），行李疊在旁邊；西北角是巧拼區（矮桌）
+        const grp = (u0, u1, v0, v1, n) => { const cols = Math.max(1, Math.round((u1 - u0) / 0.62)), rows = Math.ceil(n / cols); let k = 0; for (let j = 0; j < rows; j++) for (let i = 0; i < cols && k < n; i++, k++) { const u = u0 + 0.31 + i * ((u1 - u0 - 0.62) / Math.max(1, cols - 1) || 0), v = v0 + 0.25 + j * ((v1 - v0 - 0.5) / Math.max(1, rows - 1) || 0); L.deskTop.push([u, v, fl, 0]); L.deskBody.push([u, v, fl, 0]); } };
+        grp(45.4, 47.8, 5.8, 7.4, 5); grp(48.6, 50.6, 5.5, 7.1, 5); grp(43.7, 44.6, 9.2, 11.2, 3); grp(45.6, 48.2, 9.4, 10.8, 6); grp(48.6, 50.7, 9.3, 10.7, 6);
+        for (const [u0, v0, n] of [[45.6, 8.0, 6], [48.8, 7.7, 6], [44.9, 9.4, 4], [45.8, 11.3, 6], [48.8, 11.2, 6], [43.2, 8.2, 4]]) for (let k = 0; k < n; k++) (k % 3 ? L.cases : L.packs).push([u0 + (k % 3) * 0.6, v0 + Math.floor(k / 3) * 0.4, fl, (k % 5) * 0.2]);
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 6; j++) obox((i + j) % 2 ? M.foamR : M.foamB, 42.9 + i * 0.6, 43.5 + i * 0.6, 3.9 + j * 0.57, 4.47 + j * 0.57, fl, fl + 0.03);
+        obox(M.desk, 43.4, 44.6, 5.0, 5.9, fl + 0.28, fl + 0.32); for (const [u, v] of [[43.5, 5.1], [44.5, 5.1], [43.5, 5.8], [44.5, 5.8]]) obox(M.desk, u - 0.03, u + 0.03, v - 0.03, v + 0.03, fl, fl + 0.28);
+        for (let k = 0; k < 4; k++) L.cases.push([43.2 + k * 0.5, 6.7, fl + 0.03, 0.3]); } }
+    if (r.type === 'library') { // 進門是一小塊磁磚，其餘木地板；矮書櫃、壁畫、圓桌與彩色小椅子、睡袋
+      obox(M.woodFloor, r.u0 + 0.1, r.u1 - 0.1, VI, V1 - 0.2, fl, fl + 0.02, [3, 3]); obox(M.tileW, 35.8, 38.5, 9.7, V1 - 0.2, fl, fl + 0.03);
       for (let k = 0; k < 4; k++) L.shelf.push([r.u0 + 1.3 + k * 1.9, VI + 0.22, fl, 0]); for (let k = 0; k < 4; k++) L.shelf.push([r.u1 - 0.33, 3.4 + k * 1.9, fl, -Math.PI / 2]);
       panel(M.libMural, 'v', VI + 0.2, V1 - 0.4, fl + 1.3, fl + 3.1, r.u0 + 0.12, -1);
       for (const [u, v] of [[r.u0 + 2.2, 4.6], [r.u0 + 5.0, 4.6]]) { L.round.push([u, v, fl, 0]); [[0.9, 0, -Math.PI / 2], [-0.9, 0, Math.PI / 2], [0, 0.9, Math.PI], [0, -0.9, 0]].forEach(([du, dv, y], i) => [L.kidR, L.kidY, L.kidB, L.kidR][i].push([u + du, v + dv, fl, y])); }
-      for (let k = 0; k < 8; k++) (k % 2 ? L.bag2 : L.bag).push([r.u0 + 1.4 + (k % 4) * 1.6, 7.6 + Math.floor(k / 4) * 1.7, fl + 0.02, Math.PI / 2]); }
-    if (r.type === 'meeting') { // ㄇ字形會議桌、藍椅子、白板、冷氣、吊扇
-      const u0 = 16.2, u1 = 26.0, va = 4.6, vb = 9.6; for (let u = u0 + 0.8; u < u1; u += 1.6) { L.mtTop.push([u, va, fl, Math.PI]); L.mtBody.push([u, va, fl, Math.PI]); L.mtTop.push([u, vb, fl, 0]); L.mtBody.push([u, vb, fl, 0]); L.blue.push([u - 0.4, va - 0.65, fl, 0]); L.blue.push([u + 0.4, va - 0.65, fl, 0]); L.blue.push([u - 0.4, vb + 0.65, fl, Math.PI]); L.blue.push([u + 0.4, vb + 0.65, fl, Math.PI]); }
-      for (let v = va + 0.9; v < vb - 0.5; v += 1.6) { L.mtTop.push([u0 - 0.3, v, fl, -Math.PI / 2]); L.mtBody.push([u0 - 0.3, v, fl, -Math.PI / 2]); L.blue.push([u0 - 0.95, v - 0.35, fl, Math.PI / 2]); L.blue.push([u0 - 0.95, v + 0.35, fl, Math.PI / 2]); }
-      obox(M.white, 13.7, 13.8, 5.5, 7.3, fl + 0.8, fl + 1.9); obox(M.metal, 13.6, 13.9, 5.6, 5.65, fl, fl + 0.8); obox(M.metal, 13.6, 13.9, 7.15, 7.2, fl, fl + 0.8);
-      obox(M.ac, 22.0, 22.9, VI, VI + 0.24, fl + 2.55, fl + 2.85); L.ceilFan.push([19.0, 7.1, CEIL2 - 0.4, 0]); L.ceilFan.push([24.0, 7.1, CEIL2 - 0.4, 0.6]); obox(M.cabinet, 27.6, 29.3, VI, VI + 0.45, fl, fl + 1.9); }
-    if (r.type === 'office') { // 辦公室：老師桌與電腦、公文櫃
-      for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) { const u = 15.0 + i * 3.2, v = 5.0 + j * 3.0; obox(M.tdesk, u, u + 1.4, v, v + 0.75, fl, fl + 0.76); L.pcs.push([u + 0.7, v + 0.2, fl, 0]); L.chair.push([u + 0.7, v + 1.15, fl, Math.PI]); }
-      obox(M.cabinet, 14.0, 28.0, VI, VI + 0.45, fl, fl + 1.9); obox(M.ac, 20, 20.9, VI + 0.45, VI + 0.69, fl + 2.55, fl + 2.85); }
-    if (r.type === 'toilet') { obox(M.tileW, r.u0 + 0.1, r.u1 - 0.1, VI, V1 - 0.2, fl, fl + 0.02); for (let k = 0; k < 3; k++) obox(M.stall, r.u0 + 0.5 + k * 1.1, r.u0 + 0.55 + k * 1.1, VI, 4.0, fl, fl + 1.9); obox(M.stall, r.u0 + 0.5, r.u1 - 0.3, 3.95, 4.0, fl, fl + 1.9); obox(M.tileW, r.u0 + 0.4, r.u1 - 0.4, 9.6, 10.2, fl, fl + 0.85); dadoU(M.tileGrid, VI, 1, r.u0 + 0.1, r.u1 - 0.1, fl, fl + 1.6); }
+      for (let k = 0; k < 6; k++) (k % 2 ? L.bag2 : L.bag).push([r.u0 + 1.2 + (k % 3) * 1.4, 7.0 + Math.floor(k / 3) * 1.9, fl + 0.02, Math.PI / 2]); }
+    if (r.type === 'toilet') { obox(M.tileW, r.u0 + 0.1, r.u1 - 0.1, VI, V1 - 0.2, fl, fl + 0.02); obox(M.wallIn, 75.15, 75.25, VI, V1 - 0.2, fl, fl + 2.6);   // 左男右女
+      for (const u of [73.9, 74.9, 75.8, 76.6]) obox(M.stall, u, u + 0.05, VI, 4.0, fl, fl + 1.9); obox(M.stall, 73.9, 76.65, 3.95, 4.0, fl, fl + 1.9); for (let k = 0; k < 3; k++) obox(M.white, 73.75 + k * 0.32, 73.95 + k * 0.32, 8.0, 8.35, fl + 0.4, fl + 1.1);
+      dadoU(M.tileGrid, VI, 1, r.u0 + 0.1, r.u1 - 0.1, fl, fl + 1.6); }
   }
 
   // ===== 旗桿（穿堂前）、司令台 =====
   for (const [u, k] of [[8.5, 0], [10.5, 1]]) { obox(M.gate, u - 0.05, u + 0.05, 22.5, 22.6, 0, 9); if (k === 0) obox(M.flag, u + 0.05, u + 1.6, 22.53, 22.57, 7.8, 8.9); }
   obox(M.trim, 58, 68, 15, 18.6, 0, 1.1); obox(M.wall, 58.5, 67.5, 15.2, 18.4, 3.9, 4.2); for (const u of [58.8, 67.2]) obox(M.column, u - 0.2, u + 0.2, 18.0, 18.4, 1.1, 3.9);
-  // ===== 廁所東側通道、禮堂（風雨教室） =====
-  obox(M.floor, 77, 84.8, V0, V2, 0, F1, [2, 2]); obox(M.trim, 77, 84.8, V0, V2, FH - 0.1, FH + 0.2); obox(M.ceil, 77, 84.8, V0, V2, FH - 0.11, FH - 0.1); gableRoof(M.roof, 77.3, 84.5, V0, V2, FH + 0.2, 0.8, 0.3);
+  // ===== 廁所東邊到禮堂：一條不寬的走廊（有屋頂）；禮堂（風雨教室） =====
+  obox(M.paver, 77, 84.8, V1, V2, 0, F1, [3, 3]); obox(M.trim, 77, 84.8, V1 - 0.1, V2 + 0.1, FH - 0.1, FH + 0.15); obox(M.ceil, 77, 84.8, V1, V2, FH - 0.11, FH - 0.1);
+  for (const u of [79.6, 82.2]) for (const v of [V1 + 0.15, V2 - 0.15]) obox(M.column, u - 0.12, u + 0.12, v - 0.12, v + 0.12, 0, FH - 0.1);
   { const u0 = 84.8, u1 = 105, hh = 7.8, wi = 0.25; obox(M.floor, u0, u1, V0, V2, 0, F1, [2, 2]);
     const winS = [], winN = []; for (let a = u0 + 3.5; a < u1 - 6; a += 3.4) { winN.push({ a, b: a + 1.8, lo: 2.2, hi: 6.2, glass: true }); if (a > u0 + 5) winS.push({ a, b: a + 1.8, lo: 2.2, hi: 6.2, glass: true }); }
     winS.push({ a: u0 + 2.0, b: u0 + 4.0, lo: F1, hi: F1 + 2.5 });   // 後門（靠操場）
     wallU(M, M.hall, V0, V0 + wi, u0, u1, 0, hh, winN); wallU(M, M.hall, V2 - wi, V2, u0, u1, 0, hh, winS);
-    wallV(M, M.teal, u0, u0 + wi, V0, V2, 0, hh, [{ a: 7.6, b: 9.4, lo: F1, hi: F1 + 2.3 }]); obox(M.door, u0 + wi, u0 + wi + 0.05, 7.6, 9.4, F1, F1 + 2.3); wallV(M, M.paleGreen, u1 - wi, u1, V0, V2, 0, hh);
+    // 西牆：門在走廊盡頭（雙開，往禮堂裡開）
+    wallV(M, M.teal, u0, u0 + wi, V0, V2, 0, hh, [{ a: 12.5, b: 14.5, lo: F1, hi: F1 + 2.3 }]);
+    doorLeaf(G, M, 'hallW1', { axis: 'v', a: 12.5, b: 13.5, c: u0 + wi / 2, h0: F1, h1: F1 + 2.28, hinge: 'a', to: 1 }); doorLeaf(G, M, 'hallW2', { axis: 'v', a: 13.5, b: 14.5, c: u0 + wi / 2, h0: F1, h1: F1 + 2.28, hinge: 'b', to: 1 });
+    wallV(M, M.paleGreen, u1 - wi, u1, V0, V2, 0, hh);
     obox(M.door, u0 + 1.95, u0 + 2.0, V2 - wi, V2, F1, F1 + 2.5); obox(M.door, u0 + 4.0, u0 + 4.05, V2 - wi, V2, F1, F1 + 2.5);
     // 牆腳白磁磚、窗邊玫瑰紅窗簾、冷氣
-    dadoU(M.tileGrid, V0 + wi, 1, u0 + wi, 99.4, F1, F1 + 1.3); dadoU(M.tileGrid, V2 - wi, -1, u0 + wi, 99.4, F1, F1 + 1.3, [[u0 + 2.0, u0 + 4.0]]); dadoV(M.tileGrid, u0 + wi, 1, V0 + wi, V2 - wi, F1, F1 + 1.3, [[7.55, 9.45]]);
+    dadoU(M.tileGrid, V0 + wi, 1, u0 + wi, 99.4, F1, F1 + 1.3); dadoU(M.tileGrid, V2 - wi, -1, u0 + wi, 99.4, F1, F1 + 1.3, [[u0 + 2.0, u0 + 4.0]]); dadoV(M.tileGrid, u0 + wi, 1, V0 + wi, V2 - wi, F1, F1 + 1.3, [[12.45, 14.55]]);
     for (const o of winN) { obox(M.rose, o.a - 0.55, o.a - 0.05, V0 + wi + 0.05, V0 + wi + 0.12, 1.7, 6.6); obox(M.rose, o.b + 0.05, o.b + 0.55, V0 + wi + 0.05, V0 + wi + 0.12, 1.7, 6.6); }
     for (const o of winS.filter(o => o.glass)) { obox(M.rose, o.a - 0.55, o.a - 0.05, V2 - wi - 0.12, V2 - wi - 0.05, 1.7, 6.6); obox(M.rose, o.b + 0.05, o.b + 0.55, V2 - wi - 0.12, V2 - wi - 0.05, 1.7, 6.6); }
     for (const a of [u0 + 7.6, u0 + 14.4]) { obox(M.ac, a, a + 1.0, V0 + wi, V0 + wi + 0.26, 6.55, 6.88); obox(M.ac, a, a + 1.0, V2 - wi - 0.26, V2 - wi, 6.55, 6.88); }
@@ -577,33 +643,40 @@ RB.buildSchool = () => {
     // 舞台兩側小房間（面向舞台：左＝北側放庶務、右＝南側電源）
     for (const [va, vb, vw] of [[V0 + wi, 5.0, 5.0], [12.0, V2 - wi, 12.0]]) { obox(M.hall, 99.5, u1 - wi, vw - 0.1, vw + 0.1, F1, 4.2); wallV(M, M.hall, 99.4, 99.6, va, vb, F1, 4.2, [{ a: (va + vb) / 2 - 0.5, b: (va + vb) / 2 + 0.5, lo: F1, hi: F1 + 2.1 }]); obox(M.door, 99.36, 99.4, (va + vb) / 2 - 0.5, (va + vb) / 2 - 0.45, F1, F1 + 2.1); obox(M.hall, 99.5, u1 - wi, va, vb, 4.2, 4.35); obox(M.tileGrid, 99.36, 99.4, va, (va + vb) / 2 - 0.55, F1, F1 + 1.3); obox(M.tileGrid, 99.36, 99.4, (va + vb) / 2 + 0.55, vb, F1, F1 + 1.3); }
     obox(M.trim, u0, u1, V0, V2, hh - 0.2, hh); obox(M.ceil, u0 + wi, u1 - wi, V0 + wi, V2 - wi, hh - 0.21, hh - 0.2); gableRoof(M.roof, u0, u1, V0, V2, hh, 2.6, 0.7);
-    // 小隊桌（6 組 × 8 人，摺疊椅）
-    for (let i = 0; i < 3; i++) for (let j = 0; j < 2; j++) { const uc = 88.2 + i * 3.6, vc = 5.6 + j * 4.4; obox(M.hallTable, uc - 1.2, uc + 1.2, vc - 0.8, vc + 0.8, F1 + 0.72, F1 + 0.76); for (const [du, dv] of [[-1.1, -0.7], [1.1, -0.7], [-1.1, 0.7], [1.1, 0.7]]) obox(M.metal, uc + du - 0.02, uc + du + 0.02, vc + dv - 0.02, vc + dv + 0.02, F1, F1 + 0.72); for (const du of [-0.9, -0.3, 0.3, 0.9]) { L.fold.push([uc + du, vc - 1.15, F1, 0]); L.fold.push([uc + du, vc + 1.15, F1, Math.PI]); } }
+    // 桌子（依使用者畫的）：舞台前一張橫放的長桌，前面六張桌子，後面（西半邊）空著
+    const tbl = (a, b, c, d) => { obox(M.hallTable, a, b, c, d, F1 + 0.72, F1 + 0.76); for (const [u, v] of [[a + 0.1, c + 0.1], [b - 0.1, c + 0.1], [a + 0.1, d - 0.1], [b - 0.1, d - 0.1]]) obox(M.metal, u - 0.02, u + 0.02, v - 0.02, v + 0.02, F1, F1 + 0.72);
+      if (b - a > d - c) { for (let u = a + 0.35; u < b - 0.2; u += 0.6) { L.fold.push([u, c - 0.35, F1, 0]); L.fold.push([u, d + 0.35, F1, Math.PI]); } } else { for (let v = c + 0.35; v < d - 0.2; v += 0.6) { L.fold.push([a - 0.35, v, F1, Math.PI / 2]); L.fold.push([b + 0.35, v, F1, -Math.PI / 2]); } } };
+    obox(M.hallTable, 97.9, 98.7, 6.3, 11.3, F1 + 0.72, F1 + 0.76); for (const v of [6.4, 11.2]) for (const u of [98.0, 98.6]) obox(M.metal, u - 0.02, u + 0.02, v - 0.02, v + 0.02, F1, F1 + 0.72); for (let v = 6.6; v < 11.2; v += 0.7) L.fold.push([97.5, v, F1, Math.PI / 2]);
+    tbl(89.9, 90.7, 5.2, 7.9); tbl(89.9, 90.7, 8.8, 11.0); tbl(91.9, 94.1, 5.2, 6.4); tbl(94.6, 96.8, 5.1, 6.3); tbl(92.2, 94.5, 9.4, 10.6); tbl(94.9, 97.1, 9.3, 10.5);
     for (let u = u0 + 2; u < u1 - 6; u += 3.2) for (const v of [5, 10]) obox(M.light, u, u + 1.2, v, v + 0.12, hh - 0.32, hh - 0.27); }
-  // ===== 西側風雨走廊（藍綠色透光雨遮、白色鋼柱） =====
-  obox(M.canopy, 19.8, 24.2, 21, 55, 3.0, 3.06); for (let v = 21; v <= 55; v += 3.4) { obox(M.column, 20.15, 20.35, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 23.65, 23.85, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 20.15, 23.85, v - 0.05, v + 0.05, 2.9, 3.0); } obox(M.column, 20.15, 20.35, 21, 55, 2.9, 3.0); obox(M.column, 23.65, 23.85, 21, 55, 2.9, 3.0); obox(M.floor, 20, 24, 21, 55, 0, 0.15, [2, 2]);
-  // ===== 南排：器材室（西側山牆有彩繪）、國幼班（北側走廊面向操場）、遊樂器材 =====
-  obox(M.wall, 20, 32, 55.5, 64, 0, FH + 0.3); obox(M.door, 25, 26.8, 55.45, 55.5, 0.15, 2.4); gableRoof(M.roof, 20, 32, 55.5, 64, FH + 0.3, 1.4, 0.4); panel(M.kMural, 'v', 56.0, 63.5, 0.6, FH + 0.1, 19.98, 1);
-  { const u0 = 32, u1 = 77, vC = 58.5, vB = 66; obox(M.floor, u0, u1, 56, vB, 0, F1, [2, 2]); const ops = [{ a: 39.45, b: 40.55, lo: F1, hi: F1 + 2.2 }, { a: 61.45, b: 62.55, lo: F1, hi: F1 + 2.2 }]; for (let a = 34; a < u1 - 2; a += 2.6) if (!ops.some(o => a + 1.6 > o.a - 0.3 && a < o.b + 0.3)) ops.push({ a, b: a + 1.6, lo: F1 + 1.0, hi: F1 + 2.4, glass: true });
-    wallU(M, M.wall, vC, vC + 0.2, u0, u1, 0, FH, ops); wallU(M, M.wall, vB - 0.2, vB, u0, u1, 0, FH); obox(M.wall, u0, u0 + 0.2, vC, vB, 0, FH); obox(M.wall, u1 - 0.2, u1, vC, vB, 0, FH); obox(M.wallIn, 54.4, 54.6, vC, vB, 0, FH);
-    for (const d of [40, 62]) { obox(M.door, d - 0.6, d - 0.55, vC, vC + 0.2, F1, F1 + 2.2); obox(M.door, d + 0.55, d + 0.6, vC, vC + 0.2, F1, F1 + 2.2); }
-    // 室內：白磁磚牆腳、粉紅窗簾、彩色地墊、矮長桌
-    dadoU(M.tileGrid, vC + 0.2, 1, u0 + 0.2, 54.4, F1, F1 + 1.25, [[39.4, 40.6]]); dadoU(M.tileGrid, vC + 0.2, 1, 54.6, u1 - 0.2, F1, F1 + 1.25, [[61.4, 62.6]]); dadoU(M.tileGrid, vB - 0.2, -1, u0 + 0.2, u1 - 0.2, F1, F1 + 1.25);
-    for (const o of ops.filter(o => o.glass)) { obox(M.pinkCurtain, o.a - 0.35, o.a + 0.05, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); obox(M.pinkCurtain, o.b - 0.05, o.b + 0.35, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); }
+  // ===== 西側風雨走廊（藍綠色透光雨遮、白色鋼柱），從走廊轉角往南接到國幼班 =====
+  obox(M.canopy, 20.6, 24.8, WS, 55, 3.0, 3.06); for (let v = WS + 0.2; v <= 55; v += 3.4) { obox(M.column, 20.95, 21.15, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 24.25, 24.45, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 20.95, 24.45, v - 0.05, v + 0.05, 2.9, 3.0); } obox(M.column, 20.95, 21.15, WS, 55, 2.9, 3.0); obox(M.column, 24.25, 24.45, WS, 55, 2.9, 3.0); obox(M.floor, 20.8, 24.6, WS, 55, 0, 0.15, [2, 2]);
+  // ===== 南排：器材室（往後移到國幼班西南邊）、國幼班（西側推門→長走廊→推門→一小塊磁磚，其餘木地板）、溜滑梯 =====
+  obox(M.wall, 20.5, 32.5, 64.6, 72, 0, FH + 0.3); obox(M.door, 25, 26.8, 64.55, 64.6, 0.15, 2.4); gableRoof(M.roof, 20.5, 32.5, 64.6, 72, FH + 0.3, 1.4, 0.4); panel(M.kMural, 'v', 65.1, 71.5, 0.6, FH + 0.1, 20.48, 1);
+  groundPatch(M.conc, 19.5, 33.0, 55, 64.6, 0.07, 6);
+  { const u0 = 32, u1 = 77, vC = 58.5, vB = 66, vK = 61.4, uP = 54.5; obox(M.floor, u0, u1, 56, vC, 0, F1, [2, 2]);
+    obox(M.tileW, u0 + 0.2, uP, vC + 0.2, vK, 0, F1 + 0.01); obox(M.tileW, uP, 59.8, vC + 0.2, vK, 0, F1 + 0.01); obox(M.woodFloor, uP + 0.1, u1 - 0.2, vC + 0.2, vB - 0.2, 0, F1, [3, 3]); obox(M.floor, u0 + 0.2, uP, vK, vB - 0.2, 0, F1, [2, 2]);
+    const ops = []; for (let a = 33.0; a < u1 - 2; a += 2.6) ops.push({ a, b: a + 1.6, lo: F1 + 1.0, hi: F1 + 2.4, glass: true });
+    wallU(M, M.wall, vC, vC + 0.2, u0, u1, 0, FH, ops); wallU(M, M.wall, vB - 0.2, vB, u0, u1, 0, FH);
+    wallV(M, M.wall, u0, u0 + 0.2, vC, vB, 0, FH, [{ a: 59.4, b: 60.5, lo: F1, hi: F1 + 2.2 }]); obox(M.wall, u1 - 0.2, u1, vC, vB, 0, FH);
+    doorLeaf(G, M, 'kWest', { axis: 'v', a: 59.4, b: 60.5, c: u0 + 0.1, h0: F1, h1: F1 + 2.18, hinge: 'a', to: 1, mat: M.doorGreen, win: true });
+    // 室內長走廊（白牆）到底的推門
+    wallU(M, M.white, vK, vK + 0.15, u0 + 0.2, uP, F1, FH); wallV(M, M.wallIn, uP - 0.1, uP + 0.1, vC + 0.2, vB - 0.2, F1, FH, [{ a: 59.4, b: 60.5, lo: F1, hi: F1 + 2.2 }]);
+    doorLeaf(G, M, 'kIn', { axis: 'v', a: 59.4, b: 60.5, c: uP, h0: F1, h1: F1 + 2.18, hinge: 'a', to: 1, win: true });
+    for (const u of [40.0, 47.5]) obox(M.wallIn, u - 0.08, u + 0.08, vK + 0.15, vB - 0.2, F1, FH);
+    dadoU(M.tileGrid, vC + 0.2, 1, uP + 0.1, u1 - 0.2, F1, F1 + 1.25); dadoU(M.tileGrid, vB - 0.2, -1, uP + 0.1, u1 - 0.2, F1, F1 + 1.25);
+    for (const o of ops.filter(o => o.a > uP)) { obox(M.pinkCurtain, o.a - 0.35, o.a + 0.05, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); obox(M.pinkCurtain, o.b - 0.05, o.b + 0.35, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); }
     for (let u = u0; u <= u1 + 0.01; u += 3.2) obox(M.column, u - 0.15, u + 0.15, 56, 56.3, 0, FH); obox(M.trim, u0, u1, 55.8, vB, FH, FH + 0.3); obox(M.ceil, u0, u1, 55.8, vB, FH - 0.01, FH); gableRoof(M.roof, u0, u1, 56, vB, FH + 0.3, 1.6, 0.5);
-    const mats = [M.mat1, M.mat2, M.mat3, M.mat4]; for (let i = 0; i < 17; i++) for (let j = 0; j < 4; j++) obox(mats[(i + j) % 4], u0 + 0.8 + i * 1.2, u0 + 2.0 + i * 1.2, vC + 1.6 + j * 1.2, vC + 2.8 + j * 1.2, F1, F1 + 0.04);
-    obox(M.white, 57, 61.5, 61.5, 62.5, F1 + 0.5, F1 + 0.55); obox(M.shelf, 40.8, 42.6, vC + 0.3, vC + 0.6, F1, F1 + 0.6);
-    for (let u = u0 + 2; u < u1 - 1; u += 3) obox(M.light, u, u + 1.2, 62, 62.12, FH - 0.12, FH - 0.08); }
-  { // 遊樂器材：平台塔＋溜滑梯＋爬梯＋鞦韆
+    obox(M.white, 64, 68.5, 62.5, 63.5, F1 + 0.32, F1 + 0.37); for (let k = 0; k < 8; k++) (k % 2 ? L.bag2 : L.bag).push([62 + (k % 4) * 3.2, 60.6 + Math.floor(k / 4) * 3.6, F1 + 0.02, 0]);
+    for (let u = u0 + 2; u < u1 - 1; u += 3) obox(M.light, u, u + 1.2, 62, 62.12, FH - 0.12, FH - 0.08); for (let u = u0 + 2; u < uP; u += 4) obox(M.light, u, u + 1.2, 59.9, 60.02, FH - 0.12, FH - 0.08); }
+  { // 遊樂器材：只有溜滑梯（平台塔＋滑梯＋爬梯）
     for (const [u, v] of [[80.6, 57.1], [83.4, 57.1], [80.6, 59.9], [83.4, 59.9]]) obox(M.play2, u - 0.08, u + 0.08, v - 0.08, v + 0.08, 0, 3.0);
     obox(M.play3, 80.5, 83.5, 57.0, 60.0, 1.3, 1.42); gableRoof(M.play, 80.5, 83.5, 57.0, 60.0, 3.0, 0.9, 0.25);
     for (const v of [57.0, 60.0]) obox(M.play3, 80.6, 83.4, v - 0.03, v + 0.03, 1.42, 2.3); obox(M.play3, 80.47, 80.53, 57.1, 59.9, 1.42, 2.3);
     const ang = Math.atan2(1.15, 4.2), Ls = Math.hypot(1.15, 4.2), sg = new THREE.BoxGeometry(Ls, 0.05, 0.75); sg.rotateZ(-ang); place(M.play, sg, 85.6, 58.5, 0.86, 0);
     for (const dv of [-0.4, 0.4]) { const rg = new THREE.BoxGeometry(Ls, 0.22, 0.05); rg.rotateZ(-ang); place(M.play, rg, 85.6, 58.5 + dv, 0.97, 0); }
     for (const v of [57.6, 58.5]) obox(M.play2, 79.6, 79.7, v - 0.04, v + 0.04, 0, 1.45); for (let k = 1; k <= 4; k++) obox(M.play3, 79.6, 79.75, 57.6, 58.5, k * 0.29 - 0.03, k * 0.29);
-    obox(M.play2, 79.6, 80.5, 57.55, 57.65, 1.38, 1.44); obox(M.play2, 79.6, 80.5, 58.45, 58.55, 1.38, 1.44);
-    for (const u of [88.5, 92.5]) for (const v of [55.6, 57.6]) { const lg = new THREE.BoxGeometry(0.08, 2.75, 0.08); lg.rotateX((v < 56 ? 1 : -1) * 0.2); place(M.gate, lg, u, v + (v < 56 ? 0.3 : -0.3), 1.33, 0); }
-    obox(M.gate, 88.4, 92.6, 56.55, 56.65, 2.55, 2.66); for (const u of [89.6, 91.4]) { obox(M.metal, u - 0.25, u - 0.23, 56.58, 56.62, 0.45, 2.55); obox(M.metal, u + 0.23, u + 0.25, 56.58, 56.62, 0.45, 2.55); obox(M.play, u - 0.3, u + 0.3, 56.45, 56.75, 0.42, 0.47); } }
+    obox(M.play2, 79.6, 80.5, 57.55, 57.65, 1.38, 1.44); obox(M.play2, 79.6, 80.5, 58.45, 58.55, 1.38, 1.44); }
   // ===== 其他校內建物 =====
   obox(M.wall, 2.5, 7, 45, 62, 0, FH); obox(M.wall, 3, 17, 62, 66.5, 0, FH); obox(M.wall, 99, 112, 46.5, 58.5, 0, FH); obox(M.wall, 100.5, 114.5, 60.5, 68, 0, FH);
   for (const [a, b, c, d] of [[2.5, 7, 45, 62], [3, 17, 62, 66.5], [99, 112, 46.5, 58.5], [100.5, 114.5, 60.5, 68]]) obox(M.trim, a - 0.2, b + 0.2, c - 0.2, d + 0.2, FH, FH + 0.3);
@@ -629,19 +702,8 @@ RB.W3 = (x, y, h) => [x, RB.H(x, y) + h, -y];
 function cr(p0, p1, p2, p3, t) { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3); }
 RB.pathAt = (keys, t) => { const n = keys.length; if (t <= keys[0].t) return keys[0]; if (t >= keys[n - 1].t) return keys[n - 1]; let i = 0; while (i < n - 2 && t > keys[i + 1].t) i++; const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(n - 1, i + 2)]; let u = (t - k1.t) / (k2.t - k1.t); u = u * u * (3 - 2 * u) * 0.45 + u * 0.55; const f = a => [0, 1, 2].map(j => cr(k0[a][j], k1[a][j], k2[a][j], k3[a][j], u)); return { p: f('p'), l: f('l'), fov: (k1.fov || 50) + ((k2.fov || 50) - (k1.fov || 50)) * u }; };
 
-// 角色：three.js 範例的 Xbot（Mixamo 原地走路動畫）。步伐對應的速度約 1.4 m/s，動畫進度跟走過的距離綁在一起，腳不會滑。
-RB.XBOT_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/models/gltf/Xbot.glb';
-RB.STRIDE = 1.4;
-RB.loadCharacter = async () => {
-  const g = await new GLTFLoader().loadAsync(RB.XBOT_URL); const root = g.scene;
-  const body = new THREE.MeshStandardMaterial({ color: 0xf08a3c, roughness: 0.55 }), joint = new THREE.MeshStandardMaterial({ color: 0x33393f, roughness: 0.6 });
-  root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.material = (o.material && /Joint/i.test(o.material.name)) ? joint : body; } });
-  const mixer = new THREE.AnimationMixer(root), clip = n => g.animations.find(a => a.name === n);
-  const walk = mixer.clipAction(clip('walk')), idle = mixer.clipAction(clip('idle'));
-  for (const a of [walk, idle]) { a.play(); a.setEffectiveWeight(0); }
-  RB.CH = { root, mixer, walk, idle, walkDur: clip('walk').duration, idleDur: clip('idle').duration };
-  return root;
-};
+// 角色：山友吉祥物（RB.makeMascot，在 06a_mascot.js）。走路動作的進度跟走過的距離綁在一起，腳不會滑。
+RB.loadCharacter = async () => { const m = RB.makeMascot(); m.root.traverse(o => { if (o.isMesh) { o.castShadow = true; } }); RB.CH = m; return m.root; };
 
 // ---- 把場景腳本編譯成時間軸 ----
 // 步驟：{walk:[點或 {p, cam, label, caption}], speed, ff(快轉倍數), cam}、{stop:秒, face, cam, label, caption}、{aerial:秒, keys, blend}
@@ -654,10 +716,12 @@ RB.compile = sc => {
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
   // 配音對時：step.vo（句子編號或陣列）→ 句子開始時間記在 sc.vo；停留／空拍的長度依句子長度自動算
   const VOD = id => (RB.VO && RB.VO[id]) || 2, GAP = sc.voGap || 0.22, vo = [], A = {}, pend = []; let voEnd = -9;
+  const doorEv = [];
   const say = (ids, tmin) => { for (const id of [].concat(ids || [])) { const a = Math.max(tmin, voEnd + GAP); vo.push({ id, t: a, d: VOD(id) }); A[id] = a; voEnd = a + VOD(id); tmin = a; } };
   const tref = (r, base, end) => (r === 'end' ? end : typeof r === 'number' ? base + r : (A[r.at] + (r.k || 0) * VOD(r.at) + (r.off || 0)));
   for (const st of sc.steps) {
     const t0s = t; if (st.labels) pend.push([st, t0s]);
+    for (const [key, to] of [['open', 1], ['close', 0]]) for (const d of [].concat(st[key] || [])) { const id = Array.isArray(d) ? d[0] : d, at = Array.isArray(d) ? d[1] : (st[key + 'At'] || 0); doorEv.push({ id, t: t0s + at, to, dur: st.doorDur || 0.8 }); }
     if (st.walk) {
       const pts = [pos], ms = [];
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
@@ -673,7 +737,7 @@ RB.compile = sc => {
     } else if (st.stop !== undefined) {
       // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
       const auto = !st.cam && (lastCam.mode || 'follow') === 'follow'; say(st.vo, t + (st.voAt === undefined ? 0.2 : st.voAt));
-      const sd = Math.max(st.stop || 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
+      const sd = Math.max(st.stop || 0, (st.vo || st.waitVo) ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
       const seg = { type: 'stop', t0: t, t1: t + sd, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
@@ -686,6 +750,7 @@ RB.compile = sc => {
     }
   }
   for (const [st, t0s] of pend) { const seg = segs.find(g => g.t0 >= t0s - 1e-9) || segs[segs.length - 1]; for (const L of st.labels) { const a = L.on ? A[L.on] + (L.k || 0) * VOD(L.on) : t0s + (L.at || 0), b = L.off === undefined ? seg.t1 : L.off === 'scene' ? t : typeof L.off === 'number' ? a + L.off : A[L.off.at || L.off] + (L.off.k === undefined ? 1 : L.off.k) * VOD(L.off.at || L.off); labels.push(Object.assign({}, L, { in: a, out: b })); } }
+  doorEv.sort((p, q) => p.t - q.t); sc.doorEv = doorEv;
   sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; sc.vo = vo; return sc;
 };
 const angLerp = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * k; };
@@ -709,13 +774,13 @@ RB.step = (dt, snap) => {
   const P = RB.player, sc = P.sc; P.t = Math.min(sc.dur, P.t + dt); const e = RB.evalScene(sc, P.t); P.ev = e; const seg = e.seg, ff = seg.ff || 1, ch = RB.CH;
   if (e.yawT !== null) P.yaw = snap ? e.yawT : angLerp(P.yaw, e.yawT, 1 - Math.exp(-dt * ff * (seg.type === 'walk' ? 8 : 4)));
   // 角色姿勢：走路動畫的進度＝走過的距離 ÷ 步伐速度
-  ch.root.position.set(e.pos[0], e.pos[1], e.pos[2]); ch.root.rotation.y = P.yaw;
-  ch.walk.setEffectiveWeight(e.walkW); ch.idle.setEffectiveWeight(1 - e.walkW); ch.walk.time = (e.dist / RB.STRIDE) % ch.walkDur; ch.idle.time = (P.t % ch.idleDur); ch.mixer.update(0);
+  ch.root.position.set(e.pos[0], e.pos[1], e.pos[2]); ch.root.rotation.y = P.yaw; ch.update(e.walkW, e.dist, P.t);
+  RB.applyDoors(sc, P.t);
   // 鏡頭
   const c = e.cam || { mode: 'follow' }; if (c !== P.camObj) { P.camObj = c; P.camT0 = P.t; P.from = P.cam ? { p: P.cam.slice(), l: P.look.slice(), f: P.fov } : null; if (c.cut || !P.cam) snap = true; }
-  const cy = (snap && e.yawT !== null) ? e.yawT : P.yaw, head = [e.pos[0], e.pos[1] + (c.lookH === undefined ? 1.2 : c.lookH), e.pos[2]], fwd = [Math.sin(cy), 0, Math.cos(cy)], right = [Math.cos(cy), 0, -Math.sin(cy)];
+  const cy = (snap && e.yawT !== null) ? e.yawT : P.yaw, head = [e.pos[0], e.pos[1] + (c.lookH === undefined ? 0.9 : c.lookH), e.pos[2]], fwd = [Math.sin(cy), 0, Math.cos(cy)], right = [Math.cos(cy), 0, -Math.sin(cy)];
   let dp, dl, fov = c.fov || sc.fov || 52, mode = c.mode || 'follow', expo = 0;
-  if (mode === 'follow') { const f = Object.assign({ dist: 3.6, height: 2.0, side: 0.45, lookH: 1.3, ahead: 1.6, tau: 0.5 }, sc.follow || {}, c); dp = [e.pos[0] - fwd[0] * f.dist + right[0] * f.side, e.pos[1] + f.height, e.pos[2] - fwd[2] * f.dist + right[2] * f.side]; dl = [e.pos[0] + fwd[0] * f.ahead, e.pos[1] + f.lookH, e.pos[2] + fwd[2] * f.ahead]; expo = f.tau; fov = c.fov || f.fov || fov; }
+  if (mode === 'follow') { const f = Object.assign({ dist: 3.3, height: 1.8, side: 0.4, lookH: 0.95, ahead: 1.6, tau: 0.5 }, sc.follow || {}, c); dp = [e.pos[0] - fwd[0] * f.dist + right[0] * f.side, e.pos[1] + f.height, e.pos[2] - fwd[2] * f.dist + right[2] * f.side]; dl = [e.pos[0] + fwd[0] * f.ahead, e.pos[1] + f.lookH, e.pos[2] + fwd[2] * f.ahead]; expo = f.tau; fov = c.fov || f.fov || fov; }
   else if (mode === 'aerial') { const k = RB.pathAt(c.keys, e.tau); dp = k.p; dl = k.l; fov = k.fov || fov; if (c.blend && P.from) { const b = smooth((P.t - P.camT0) / c.blend); dp = lerp3(P.from.p, dp, b); dl = lerp3(P.from.l, dl, b); fov = P.from.f + (fov - P.from.f) * b; } }
   else if (mode === 'hold') { dp = P.from ? P.from.p : P.cam; dl = head; expo = c.tau || 0.6; }
   else { // fixed／track：固定機位，track 會跟著看人
@@ -729,6 +794,10 @@ RB.step = (dt, snap) => {
   if (mode === 'follow') { const x = P.cam[0], y = -P.cam[2], g = RB.inPoly(RB.CAMPUS, x, y) ? RB.GROUND + 0.5 : RB.H(x, y) + 0.8; if (P.cam[1] < g) P.cam[1] = g; }
   const ind = c.indoor ? 1 : 0; P.indoor = snap ? ind : P.indoor + (ind - P.indoor) * (1 - Math.exp(-dt / 0.4));
 };
+// 門：場景沒有開關門事件時全部開著（舊的導覽路線會直接穿過門口）；有事件的場景一開始全部關著
+RB.applyDoors = (sc, t) => { if (!RB.DOORS) return; const def = (sc.doorEv && sc.doorEv.length) ? 0 : 1, st = {};
+  for (const ev of sc.doorEv || []) { if (t < ev.t) break; const k = Math.min(1, (t - ev.t) / ev.dur), from = st[ev.id] === undefined ? def : st[ev.id]; st[ev.id] = from + (ev.to - from) * k * k * (3 - 2 * k); }
+  for (const id in RB.DOORS) RB.setDoor(id, st[id] === undefined ? def : st[id]); };
 RB.applyCamera = cam => { const P = RB.player; cam.position.set(P.cam[0], P.cam[1], P.cam[2]); cam.lookAt(P.look[0], P.look[1], P.look[2]); cam.fov = P.fov; cam.updateProjectionMatrix(); };
 
 // ---- 畫面上的字（標籤、說明字幕、場景標題）——互動播放與匯出共用 ----
@@ -765,6 +834,90 @@ RB.drawOverlay = (g, W, H, cam, opt) => {
 };
 // 自由視角時的常駐標籤（依距離顯示）
 RB.drawFreeLabels = (g, W, H, cam) => { const S = Math.min(W / 1920, H / 1080) * 1.3, cp = cam.position; g.save(); for (const L of RB.FREE_LABELS) { const d = Math.hypot(cp.x - L.pos[0], cp.y - L.pos[1], cp.z - L.pos[2]); if (d > L.max || d < (L.min || 0)) continue; if (L.floor === 2 && cp.y < RB.GROUND + RB.S.F2 + 1) continue; drawLabel(g, L, 1, W, H, cam, S); } g.restore(); };
+/* ================= 7a. 山友吉祥物（3D） ================= */
+// 依 36th／37th 頭貼裡的綠色小山畫：左肩較低、中間主峰最高、右邊凹口再一個小峰，身體下緣微彎；
+// 大眼睛（黑眼珠往右上看、白色反光點）、小眉毛、捲捲的小鼻子、微笑、腮紅點點、眼旁三條小弧線；
+// 細細的手臂、白襪藍條紋、藍色球鞋。卡通著色＋深色描邊。原點在兩腳中間的地面，面向 +z。
+RB.makeMascot = () => {
+  const T = THREE, W = 1.0, H = 0.9, LEG = 0.36, DEPTH = 0.13, BT = 0.12, BS = 0.045;
+  const GREEN = 0x84b194, INK = 0x1c1a18, SHOE = 0x3c90a9;
+  const grad = (() => { const d = new Uint8Array([90, 90, 90, 255, 175, 175, 175, 255, 255, 255, 255, 255]); const t = new T.DataTexture(d, 3, 1, T.RGBAFormat); t.minFilter = t.magFilter = T.NearestFilter; t.needsUpdate = true; return t; })();
+  const toon = (c, o) => new T.MeshToonMaterial(Object.assign({ color: c, gradientMap: grad }, o || {}));
+  const inkMat = new T.MeshBasicMaterial({ color: INK, side: T.BackSide });
+  const outline = (mesh, s) => { const o = new T.Mesh(mesh.geometry, inkMat); o.scale.setScalar(s || 1.06); o.castShadow = false; mesh.add(o); return o; };
+  // 沿平滑法線往外推一點，做成描邊用的外殼（凹口也一樣粗）
+  const inflate = (geo, d) => { const p = geo.attributes.position, n = p.count, acc = new Map(), key = i => Math.round(p.getX(i) * 1e4) + ',' + Math.round(p.getY(i) * 1e4) + ',' + Math.round(p.getZ(i) * 1e4);
+    const nr = geo.attributes.normal; for (let i = 0; i < n; i++) { const k = key(i), a = acc.get(k) || [0, 0, 0]; a[0] += nr.getX(i); a[1] += nr.getY(i); a[2] += nr.getZ(i); acc.set(k, a); }
+    const g = geo.clone(), q = g.attributes.position; for (let i = 0; i < n; i++) { const a = acc.get(key(i)), L = Math.hypot(a[0], a[1], a[2]) || 1; q.setXYZ(i, p.getX(i) + a[0] / L * d, p.getY(i) + a[1] / L * d, p.getZ(i) + a[2] / L * d); } q.needsUpdate = true; return g; };
+  // ---- 身體輪廓（x 往右、y 往上，0..1 正規化）----
+  const P = [[0.50, 0.00], [0.86, 0.015], [0.965, 0.10], [0.985, 0.36], [0.975, 0.60], [0.935, 0.76], [0.86, 0.835], [0.77, 0.845], [0.70, 0.79], [0.635, 0.69],
+    [0.575, 0.80], [0.515, 0.93], [0.425, 0.99], [0.335, 0.945], [0.27, 0.84], [0.215, 0.725], [0.165, 0.775], [0.09, 0.79], [0.03, 0.735], [0.008, 0.58], [0.012, 0.30], [0.04, 0.09], [0.14, 0.015]];
+  const shape = new T.Shape(P.map(([x, y]) => new T.Vector2((x - 0.5) * W, y * H)).map((v, i, a) => v));
+  // 用閉合的平滑曲線（CatmullRom）重畫，讓所有角都是圓的
+  { const pts = P.map(([x, y]) => new T.Vector3((x - 0.5) * W, y * H, 0)), cur = new T.CatmullRomCurve3(pts, true, 'centripetal', 0.5), sp = cur.getSpacedPoints(160);
+    shape.curves = []; shape.moveTo(sp[0].x, sp[0].y); for (let i = 1; i < sp.length; i++) shape.lineTo(sp[i].x, sp[i].y); }
+  const bodyGeo = new T.ExtrudeGeometry(shape, { depth: DEPTH, bevelEnabled: true, bevelThickness: BT, bevelSize: BS, bevelSegments: 8, curveSegments: 4, steps: 1 });
+  bodyGeo.translate(0, -H / 2, -DEPTH / 2); bodyGeo.computeVertexNormals();
+  const root = new T.Group(), rig = new T.Group(); root.add(rig);
+  const bodyPivot = new T.Group(); bodyPivot.position.y = LEG; rig.add(bodyPivot);
+  const body = new T.Mesh(bodyGeo, toon(GREEN)); body.position.y = H / 2; body.castShadow = true; bodyPivot.add(body); body.add(new T.Mesh(inflate(bodyGeo, 0.022), inkMat));
+  // ---- 臉（貼在正面的透明貼圖）----
+  const faceTex = (() => {
+    const S = 1024, cv = document.createElement('canvas'); cv.width = cv.height = S; const g = cv.getContext('2d');
+    const px = nx => nx * S, py = ny => (1 - ny) * S; // nx, ny 都是 0..1 正規化座標
+    g.lineCap = 'round'; g.lineJoin = 'round';
+    // 腮紅（粉色漸層＋小點）
+    for (const [cx, cy] of [[0.335, 0.255], [0.665, 0.272]]) { const rg = g.createRadialGradient(px(cx), py(cy), 4, px(cx), py(cy), 90); rg.addColorStop(0, 'rgba(232,150,150,0.55)'); rg.addColorStop(1, 'rgba(232,150,150,0)'); g.fillStyle = rg; g.beginPath(); g.ellipse(px(cx), py(cy), 105, 62, 0, 0, 7); g.fill();
+      g.fillStyle = 'rgba(150,90,90,0.55)'; for (let k = 0; k < 14; k++) { const a = k * 2.4, r = 18 + (k * 37) % 55; g.beginPath(); g.arc(px(cx) + Math.cos(a) * r * 1.3, py(cy) + Math.sin(a) * r * 0.55, 3.2, 0, 7); g.fill(); } }
+    // 眼睛：白眼球（黑框）＋大黑眼珠往右上＋兩顆反光點
+    const eye = (cx, cy, rx, ry, rot) => { g.save(); g.translate(px(cx), py(cy)); g.rotate(rot);
+      g.fillStyle = '#f4f3ef'; g.strokeStyle = '#1c1a18'; g.lineWidth = 11; g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.fill();
+      g.save(); g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.clip(); g.fillStyle = '#16120f'; g.beginPath(); g.ellipse(rx * 0.14, -ry * 0.12, rx * 0.9, ry * 0.9, 0, 0, 7); g.fill(); g.restore();
+      g.beginPath(); g.ellipse(0, 0, rx, ry, 0, 0, 7); g.stroke();
+      g.fillStyle = '#ffffff'; g.beginPath(); g.arc(-rx * 0.08, ry * 0.12, rx * 0.13, 0, 7); g.fill(); g.beginPath(); g.arc(rx * 0.22, ry * 0.30, rx * 0.075, 0, 7); g.fill(); g.restore(); };
+    eye(0.383, 0.43, 90, 158, -0.13); eye(0.573, 0.446, 99, 157, -0.08);
+    g.strokeStyle = '#1c1a18'; g.lineWidth = 8;
+    // 眉毛
+    for (const [cx, cy] of [[0.372, 0.625], [0.553, 0.634]]) { g.beginPath(); g.arc(px(cx), py(cy) + 26, 32, Math.PI * 1.15, Math.PI * 1.85); g.stroke(); }
+    // 鼻子（小捲）
+    g.lineWidth = 7; g.beginPath(); g.moveTo(px(0.476), py(0.312)); g.bezierCurveTo(px(0.518), py(0.33), px(0.528), py(0.282), px(0.488), py(0.278)); g.stroke();
+    // 微笑
+    g.lineWidth = 8; g.beginPath(); g.moveTo(px(0.455), py(0.245)); g.quadraticCurveTo(px(0.497), py(0.19), px(0.538), py(0.245)); g.stroke();
+    g.lineWidth = 6; g.beginPath(); g.moveTo(px(0.447), py(0.252)); g.lineTo(px(0.462), py(0.24)); g.stroke(); g.beginPath(); g.moveTo(px(0.546), py(0.252)); g.lineTo(px(0.531), py(0.24)); g.stroke();
+    // 眼旁小弧線
+    g.lineWidth = 6; for (const [cx, cy, s] of [[0.29, 0.31, -1], [0.69, 0.35, 1]]) for (let k = 0; k < 3; k++) { g.beginPath(); g.arc(px(cx) - s * k * 16, py(cy) + k * 4, 36 - k * 6, s > 0 ? -0.55 : Math.PI - 0.55 + 0.0, s > 0 ? 0.55 : Math.PI + 0.55); g.stroke(); }
+    // 右上反光
+    g.strokeStyle = 'rgba(255,255,255,0.9)'; g.lineWidth = 12; g.beginPath(); g.moveTo(px(0.89), py(0.665)); g.quadraticCurveTo(px(0.91), py(0.60), px(0.906), py(0.535)); g.stroke(); g.fillStyle = 'rgba(255,255,255,0.9)'; g.beginPath(); g.arc(px(0.922), py(0.497), 7, 0, 7); g.fill();
+    const t = new T.CanvasTexture(cv); t.colorSpace = T.SRGBColorSpace; t.anisotropy = 8; return t;
+  })();
+  const face = new T.Mesh(new T.PlaneGeometry(W, H), new T.MeshBasicMaterial({ map: faceTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }));
+  face.position.set(0, H / 2, DEPTH / 2 + BT + 0.004); face.renderOrder = 3; bodyPivot.add(face);
+  // ---- 手臂（細長、扁扁的，從身體兩側伸出）----
+  const armGeo = new T.CapsuleGeometry(0.035, 0.36, 4, 10); armGeo.translate(0, -0.21, 0); armGeo.scale(1, 1, 0.75);
+  const arms = [-1, 1].map(s => { const pv = new T.Group(); pv.position.set(s * (W / 2 + BS * 0.6), H * 0.42, 0); const m = new T.Mesh(armGeo, toon(GREEN)); m.castShadow = true; outline(m, 1.0).scale.set(1.5, 1.04, 1.5); pv.add(m); pv.rotation.z = s * 0.55; bodyPivot.add(pv); return pv; });
+  // ---- 腳：細腳、白襪（兩條藍線）、藍色球鞋（白條紋）----
+  const legs = [-1, 1].map(s => {
+    const hip = new T.Group(); hip.position.set(s * 0.16, LEG + 0.02, 0); rig.add(hip);
+    const leg = new T.Mesh(new T.CylinderGeometry(0.04, 0.04, LEG - 0.06, 10), toon(0xf4f1ea)); leg.position.y = -(LEG - 0.06) / 2; leg.castShadow = true; outline(leg, 1.0).scale.set(1.45, 1.02, 1.45); hip.add(leg);
+    for (const y of [-0.15, -0.18]) { const b = new T.Mesh(new T.CylinderGeometry(0.043, 0.043, 0.014, 10), toon(0x3a6fa8)); b.position.y = y; hip.add(b); }
+    const shoe = new T.Mesh(new T.CapsuleGeometry(0.07, 0.12, 4, 10), toon(SHOE)); shoe.rotation.x = Math.PI / 2; shoe.scale.set(1, 1, 0.8); shoe.position.set(0, -(LEG - 0.02) + 0.035, 0.05); shoe.castShadow = true; outline(shoe, 1.0).scale.set(1.12, 1.08, 1.12); hip.add(shoe);
+    for (const z of [0.02, 0.07]) { const st = new T.Mesh(new T.BoxGeometry(0.145, 0.012, 0.02), toon(0xffffff)); st.position.set(0, -(LEG - 0.02) + 0.06, 0.05 + z - 0.04); hip.add(st); }
+    return hip; });
+  rig.traverse(o => { if (o.isMesh) o.frustumCulled = false; });
+  // ---- 動作：走路的進度跟走過的距離綁在一起（腳不會滑）----
+  const STRIDE = 0.62;   // 一步（左右各一次）約 0.62 m
+  const update = (walkW, dist, t) => {
+    const ph = dist / STRIDE * Math.PI, w = walkW, sw = Math.sin(ph);
+    legs[0].rotation.x = 0.55 * sw * w; legs[1].rotation.x = -0.55 * sw * w;
+    arms[0].rotation.x = -0.5 * sw * w; arms[1].rotation.x = 0.5 * sw * w;
+    const bob = Math.abs(Math.cos(ph)) * 0.035 * w, breathe = (1 - w) * Math.sin(t * 2.2) * 0.012;
+    bodyPivot.position.y = LEG + bob; bodyPivot.rotation.z = 0.045 * sw * w; bodyPivot.rotation.x = 0.06 * w;
+    bodyPivot.scale.set(1 - breathe * 0.5, 1 + breathe, 1);
+    for (const [i, a] of arms.entries()) a.rotation.z = (i ? 1 : -1) * (0.55 + 0.06 * Math.sin(t * 2.2) * (1 - w));
+  };
+  update(0, 0, 0);
+  return { root, update, height: LEG + H, faceH: LEG + H * 0.45 };
+};
 /* ================= 8. 導覽腳本（小人走的路線、鏡頭、字幕） ================= */
 // 找店面：離 near 最近的房屋輪廓，取最靠近道路那一邊當門面
 RB.shopFront = (near, road) => {
@@ -904,7 +1057,7 @@ RB.makeTour = () => {
 
   // 自由視角時的常駐標籤
   const FL = [];
-  for (const r of RB.ROOMS) FL.push({ text: r.name, pos: U(mid(r), vmid(r), fl(r.f) + 2.4), max: 70, floor: r.f, small: true });
+  for (const r of RB.ROOMS) if (r.name) FL.push({ text: r.name, pos: U(mid(r), vmid(r), fl(r.f) + 2.4), max: 70, floor: r.f, small: true });
   FL.push({ text: '大門口', pos: U(0, 34.8, 3.4), max: 220 }, { text: '禮堂', pos: U(95, 8.5, 9), max: 260 }, { text: '國幼班', pos: U(54.5, 61, 4.5), max: 220 }, { text: '司令台', pos: U(63, 16.8, 4.5), max: 160, small: true },
     { text: '遊樂器材', pos: U(84, 58.5, 3.6), max: 160, small: true }, { text: '籃球場', pos: U(115, 25, 0.5), max: 200, small: true },
     { text: '瑞北國小', pos: W3(2, 6, 14), max: 3000, min: 230, hot: true }, { text: '台9線', pos: W3(-81, -60, 1), max: 1200, min: 40 }, { text: '東輪機車行', pos: W3(-97, 21, 5), max: 700 }, { text: '林上商號（雜貨店）', pos: W3(-186, 138, 5), max: 700 }, { text: '公車站', pos: W3(-75.6, 78, 3), max: 400, small: true });
@@ -912,80 +1065,105 @@ RB.makeTour = () => {
   RB.SHOP = shop;
 };
 /* ================= 9. 必修2 影片用場景（Google 小姐配音對時；匯出時不畫說明字幕） ================= */
-RB.VO = {"01":3.969,"02":4.081,"03":3.185,"04":7.465,"05":3.826,"06":3.657,"07":3.815,"08":7.52,"09":3.32,"10":3.962,"11":2.614,"12":4.169,"13":4.866,"14":2.661,"15":3.105,"16":1.509,"17":2.029,"18":5.889,"19":3.472,"20":3.725,"21":4.986,"22":4.445,"23":2.093,"24":6.094,"25":1.565,"26":4.767,"27":3.921,"28":5.028,"29":4.01,"30":2.97,"31":6.678,"32":4.623,"33":6.217,"34":6.362,"35":3.223,"36":4.154,"37":3.406,"38":6.458,"39":2.645,"40":2.614};
+// 第二版（2026-11-14）：主角換成山友吉祥物；每間教室只講用途——走到門口、推開門、進去看一下就出來。
+RB.VO = {"01":3.969,"02":4.081,"03":3.185,"04":7.465,"05":3.826,"06":3.657,"07":3.815,"08":7.52,"09":3.32,"10":3.962,"11":2.614,"12":4.169,"13":4.866,"14":2.661,"15":3.105,"16":1.509,"17":2.029,"18":5.889,"19":5.626,"20":3.725,"21":4.556,"22":4.445,"23":2.093,"24":6.094,"25":1.565,"26":4.767,"27":3.921,"28":5.028,"29":4.01,"30":2.97,"31":6.678,"32":4.623,"33":6.217,"34":6.362,"35":3.223,"36":4.154,"37":3.406,"38":6.458,"39":2.645,"40":2.614};
 RB.makeV2 = () => {
-  const U = RB.U, S = RB.S, F1 = S.F1, F2 = S.F2, CV = 13.6, half = (F2 - F1) / 2;
+  const U = RB.U, S = RB.S, F1 = S.F1, F2 = S.F2, FP = S.FP, CV = 13.6, half = (F2 - F1) / 2;
   const fl = f => (f === 2 ? F2 : F1);
   const R = (name, f) => RB.ROOMS.find(r => r.name === name && r.f === f);
   const mid = r => (r.u0 + r.u1) / 2;
+  const did = (r, i) => r.f + '-' + r.name + '-' + i;
   const follow = o => Object.assign({ mode: 'follow', cut: true }, o || {});
-  const roomCam = (r, d, o) => { const far = (d - r.u0) < (r.u1 - d) ? r.u1 - 0.7 : r.u0 + 0.7, f = fl(r.f); return Object.assign({ mode: 'track', pos: U(far, 3.0, f + 2.65), look: U(mid(r) + (d - mid(r)) * 0.5, 8.6, f + 0.8), track: 0.4, lookH: 1.0, cut: true, indoor: true, fov: 64 }, o || {}); };
-  const into = (r, d, dir, o) => { const f = fl(r.f); return [U(d - dir * 1.3, CV, f), { p: U(d, 12.75, f), cam: roomCam(r, d, o) }, U(d, 11.7, f), U(d - dir * 0.5, 11.0, f)]; };
-  const outOf = (r, d, dir) => { const f = fl(r.f); return [U(d, 11.7, f), U(d, 12.75, f), U(d + dir * 0.7, 13.45, f), { p: U(d + dir * 1.7, CV, f), cam: follow() }]; };
-  const inside = r => U(mid(r), 7, fl(r.f) + 0.5);
-  const c4 = R('四教', 1), c3 = R('三教', 1), c2 = R('二教', 1), c1 = R('一教', 1);
-  const meet = R('會議室', 2), prin = R('校長室', 2), lib = R('圖書室', 2), eng = R('英語教室', 2), c5 = R('五教', 2), c6 = R('六教', 2);
+  // 房間裡的鏡頭：在離門較遠的那一角、靠北牆上方，看著門口，吉祥物進門時正好面對鏡頭
+  const doorCam = (d, dir, f) => ({ mode: 'track', pos: U(d - dir * 2.5, 14.3, f + 1.6), look: U(d + dir * 0.2, 11.6, f + 0.9), track: 0.25, lookH: 0.8, cut: true, fov: 60 });
+  const roomCam = (r, d, o) => { const far = (d - r.u0) < (r.u1 - d) ? r.u1 - 0.8 : r.u0 + 0.8, f = fl(r.f); return Object.assign({ mode: 'track', pos: U(far, 3.2, f + 2.55), look: U(mid(r) + (d - mid(r)) * 0.6, 9.0, f + 0.7), track: 0.35, lookH: 0.8, cut: true, indoor: true, fov: 66 }, o || {}); };
+  // 走到教室門口 → 推開門 → 走進去看一下 → 出來
+  const peek = (r, i, dir, vo, lbl, o) => { const d = r.d[i], f = fl(r.f); o = o || {};
+    return [
+      { walk: (o.pre || []).concat([{ p: U(d - dir * 1.3, CV, f), cam: doorCam(d, dir, f) }, U(d, 13.25, f)]), ff: o.ff || 2.6, speed: 1.4, cam: o.cam },
+      { stop: 0.45, face: U(d, 9, f), open: did(r, i), openAt: 0.0, doorDur: 0.6 },
+      { walk: [{ p: U(d, 12.3, f), cam: roomCam(r, d, o.room) }, U(d, 11.2, f), U(d, 10.4, f)], speed: 1.3, vo, voAt: 0.25, labels: [Object.assign({ text: lbl, pos: U(mid(r), 7, f + 2.3), on: vo, k: 0.05, off: { at: vo }, fs: 30, color: o.color || 'rgba(20,28,36,0.88)' }, o.lab || {})] },
+      { stop: 0, waitVo: true, face: U(d, 9, f), pad: o.pad === undefined ? 0.35 : o.pad },
+      { walk: [U(d, 11.3, f), U(d, 12.6, f), { p: U(d, 13.3, f), cam: follow() }, U(d + dir * 1.2, CV, f)], speed: 1.4, ff: 2.4 }];
+  };
+  const c4 = R('四教', 1), c3 = R('三教', 1), meet = R('會議室', 2), lib = R('圖書室', 2), eng = R('英語教室', 2), c6 = R('六教', 2);
   const E = U(12, 34.9, 0.1);
   // 空拍：鏡頭在校地中心西邊一點往下看，畫面上方＝東（校門在畫面下方）
-  const C0 = U(50, 33, 0), TOP = U(31, 33, 224), TOP2 = U(32.5, 33, 214);
+  const C0 = U(50, 35, 0), TOP = U(31, 35, 228), TOP2 = U(32.5, 35, 218);
   const roof = (u, v) => U(u, v, 10), LBL = 'rgba(20,28,36,0.88)', L2 = 'rgba(20,92,110,0.92)', EDGE2 = '#7fe3f0';
-  const north1 = [['辦公室', 21, 0.12], ['樓梯', 31.1, 0.3, 0], ['四年級教室', 37.35, 0.5], ['三年級教室', 46.75, 0.62], ['二年級教室', 56.05, 0.74], ['一年級教室', 65.4, 0.86], ['樓梯', 71.8, 0.3, 12]];
-  const aerialLabels = north1.map(([t, u, k, dy]) => ({ text: t, pos: roof(u, 7), dx: -250, dy: dy || 0, fs: 25, color: LBL, on: '04', k, off: { at: '08', k: 0.05 } }))
+  const north1 = [['辦公室', 17.2, 0.12, 0, 8], ['樓梯', 31.1, 0.3, 0], ['四年級教室', 37.35, 0.5], ['三年級教室', 46.75, 0.62], ['二年級教室', 56.05, 0.74], ['一年級教室', 65.4, 0.86], ['樓梯', 71.8, 0.3, 12]];
+  const aerialLabels = north1.map(([t, u, k, dy, v]) => ({ text: t, pos: roof(u, v || 7), dx: -250, dy: dy || 0, fs: 25, color: LBL, on: '04', k, off: { at: '08', k: 0.05 } }))
     .concat([{ text: '廁所', pos: roof(75.2, 7), dx: -250, dy: -22, fs: 25, color: LBL, on: '05', k: 0.08, off: { at: '08', k: 0.05 } },
       { text: '禮堂', pos: U(95, 8.5, 10.5), dx: -250, fs: 25, color: LBL, on: '05', k: 0.55 },
-      { text: '國幼班', pos: U(54, 61, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.35 },
-      { text: '器材室', pos: U(26, 60, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.7 },
+      { text: '國幼班', pos: U(60, 61, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.35 },
+      { text: '器材室', pos: U(26.5, 68, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.7 },
       { text: '操場', pos: U(42, 21.3, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.08 },
       { text: '足球場', pos: U(62, 39, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.3 },
       { text: '籃球場', pos: U(115, 25, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.68 }])
-    .concat([['2F 會議室', 21, 7, -250, 0.22], ['2F 校長室', 19.5, 18, 230, 0.36], ['2F 圖書室', 37.35, 7, -250, 0.5], ['2F 英語教室', 46.75, 7, -250, 0.62], ['2F 五年級教室', 56.05, 7, -250, 0.76], ['2F 六年級教室', 65.4, 7, -250, 0.86]]
+    .concat([['2F 會議室', 23.5, 7, -250, 0.22], ['2F 校長室', 17.2, 18.5, 230, 0.36], ['2F 圖書室', 37.35, 7, -250, 0.5], ['2F 英語教室', 46.75, 7, -250, 0.62], ['2F 五年級教室', 56.05, 7, -250, 0.76], ['2F 六年級教室', 65.4, 7, -250, 0.86]]
       .map(([t, u, v, dx, k]) => ({ text: t, pos: roof(u, v), dx, fs: 25, color: L2, edge: EDGE2, on: '08', k })));
-  const stairCamE = { mode: 'track', pos: U(71.8, 7.0, F2 + 2.45), look: U(71.7, 11.2, F1 + 1.3), track: 0.55, lookH: 1.0, cut: true, indoor: true, fov: 66 };
-  const corrCam = { mode: 'track', pos: U(29.2, 14.4, F1 + 2.2), look: U(44, 13.2, F1 + 1.2), track: 0.3, lookH: 1.1, cut: true, fov: 58 };
-  const hallCam = { mode: 'track', pos: U(86.9, 3.4, 4.6), look: U(89.5, 13.0, 1.0), track: 0.45, lookH: 1.0, cut: true, indoor: true, fov: 64 };
-  const meetCam = { mode: 'track', pos: U(14.4, 3.1, F2 + 2.7), look: U(24.5, 9.5, F2 + 0.8), track: 0.35, lookH: 1.0, cut: true, indoor: true, fov: 64 };
-  const corr2 = { mode: 'track', pos: U(20.6, 13.0, F2 + 2.35), look: U(25.2, 14.2, F2 + 1.0), track: 0.5, lookH: 1.1, cut: true, indoor: true, fov: 62 };
-  const prinCam = { mode: 'track', pos: U(17.6, 20.3, F2 + 2.6), look: U(23.4, 16.0, F2 + 0.9), track: 0.4, lookH: 1.0, cut: true, indoor: true, fov: 64 };
-  const kCam = { mode: 'track', pos: U(48.5, 65.1, 2.9), look: U(40.5, 59.8, 0.6), track: 0.35, lookH: 1.0, cut: true, indoor: true, fov: 64 };
+  const stairCamE = { mode: 'track', pos: U(71.8, 7.0, F2 + 2.45), look: U(71.7, 11.2, F1 + 1.1), track: 0.55, lookH: 0.8, cut: true, indoor: true, fov: 66 };
+  const corrCam = { mode: 'track', pos: U(27.5, 14.4, F1 + 2.0), look: U(42, 13.2, F1 + 1.0), track: 0.3, lookH: 0.9, cut: true, fov: 58 };
+  const hallCam = { mode: 'track', pos: U(97.6, 3.4, 4.4), look: U(87, 12.6, 1.0), track: 0.45, lookH: 0.8, cut: true, indoor: true, fov: 66 };
+  const meetCam = { mode: 'track', pos: U(18.6, 3.2, F2 + 2.6), look: U(27.2, 12.4, F2 + 0.8), track: 0.4, lookH: 0.8, cut: true, indoor: true, fov: 66 };
+  const prinCam = { mode: 'track', pos: U(13.7, 17.9, FP + 2.35), look: U(19.8, 20.6, FP + 0.7), track: 0.45, lookH: 0.8, cut: true, indoor: true, fov: 68 };
+  const stepCam = { mode: 'track', pos: U(24.0, 16.9, FP + 1.75), look: U(30.8, 15.0, F2 + 0.6), track: 0.5, lookH: 0.8, cut: true, indoor: true, fov: 60 };
+  const passCam = { mode: 'track', pos: U(23.0, 21.6, FP + 2.2), look: U(25.5, 16.4, FP + 0.8), track: 0.55, lookH: 0.8, cut: true, indoor: true, fov: 64 };
+  const kCam = { mode: 'track', pos: U(75.5, 65.2, 2.9), look: U(58.5, 60.3, 0.6), track: 0.4, lookH: 0.8, cut: true, indoor: true, fov: 64 };
+  const kCorr = { mode: 'track', pos: U(53.8, 60.9, 2.7), look: U(33, 59.9, 0.9), track: 0.5, lookH: 0.8, cut: true, indoor: true, fov: 60 };
   const fn = (text, pos, on, o) => Object.assign({ text, pos, on, k: 0.15, fs: 30, color: 'rgba(20,28,36,0.88)' }, o || {});
+  const SLEEP = 'rgba(40,70,160,0.92)', STAFF = 'rgba(176,64,40,0.93)';
 
-  const A = { key: 'v2a', name: '必修2-校園', start: U(-2.6, 34.9, 0.1), yaw0: 1.33, follow: { dist: 4.2, height: 2.3 }, cam0: follow(), labels: [], steps: [
+  const A = { key: 'v2a', name: '必修2-校園', start: U(-2.6, 34.9, 0.1), yaw0: 1.33, follow: { dist: 3.4, height: 1.9 }, cam0: follow(), labels: [], steps: [
     { aerial: 0, vo: '02', voAt: 0.35, face: E, keys: [{ t: 0, p: U(-20, 35.6, 2.2), l: U(18, 33.6, 3.8), fov: 54 }, { t: 'end', p: U(-13.5, 35.4, 2.0), l: U(18, 33.6, 3.4), fov: 54 }] },
     { aerial: 0, vo: ['03', '04', '05', '06', '07', '08'], voAt: 0.2, pad: 0.7, face: E, labels: aerialLabels, keys: [
       { t: 0, p: U(-13.5, 35.4, 2.0), l: U(18, 33.6, 3.4), fov: 54 },
-      { t: { at: '03', k: 0.5 }, p: U(8, 33.5, 70), l: U(52, 33, 0), fov: 46 },
+      { t: { at: '03', k: 0.5 }, p: U(8, 35.5, 70), l: U(52, 35, 0), fov: 46 },
       { t: { at: '03', k: 1, off: 0.25 }, p: TOP, l: C0, fov: 40 },
       { t: 'end', p: TOP2, l: C0, fov: 40 }] },
-    { aerial: 2.6, face: E, keys: [{ t: 0, p: TOP2, l: C0, fov: 40 }, { t: 1.5, p: U(-16, 34.6, 16), l: U(4, 34.8, 1.2), fov: 50 }, { t: 2.6, p: U(-6.2, 34.45, 2.1), l: U(-1.0, 34.9, 1.4), fov: 52 }] },
-    { walk: [U(1.5, 34.6, 0.1), U(6.5, 33.0, 0.1), U(11, 29.5, 0.1), U(14.6, 25, 0.1), U(16.2, 21.6, F1), U(18.4, 17.8, F1), U(21.6, 15.4, F1), U(25.5, CV, F1), U(29.5, CV, F1)], vo: '09', ff: 4.0, speed: 1.5,
-      labels: [fn('穿堂', U(19.5, 16.8, F1 + 2.9), '09', { k: 0.5, off: 3.5 })] },
-    { walk: [U(33, CV, F1)].concat(into(c4, 40.4, 1)), vo: '10', cam: corrCam, ff: 1.5, speed: 1.5,
-      labels: [fn('四年級教室', U(40.4, 12.6, F1 + 2.9), '10', { k: 0.3, fs: 26, off: 3.2 }), fn('三、二、一年級教室', U(54.5, 12.6, F1 + 2.9), '10', { k: 0.55, fs: 26, lift: 0.12, off: 2.4 })] },
-    { stop: 0, vo: '11', face: inside(c4), labels: [fn('四年級教室：哥姐休息', U(37.35, 7, F1 + 2.4), '11', { k: 0.05, color: 'rgba(176,64,40,0.93)' })] },
-    { walk: outOf(c4, 40.4, 1).concat([U(48, CV, F1)]).concat(into(c2, 53.0, 1)), ff: 3.4, speed: 1.5 },
-    { stop: 0, vo: '12', face: inside(c2), labels: [fn('一、二、三年級教室：小朋友上課', U(56.05, 7, F1 + 2.4), '12', { k: 0.05 })] },
-    { walk: outOf(c2, 53.0, 1).concat([U(62, CV, F1), U(70, CV, F1), U(76.5, CV, F1), U(80.5, 14.2, F1), U(83.2, 16.0, 0.1), U(86.4, 16.7, 0.1), U(87.8, 16.3, 0.1), { p: U(87.8, 15.3, F1), cam: hallCam }, U(87.8, 14.0, F1), U(88.6, 12.7, F1), U(91.5, 12.5, F1)]), vo: '13', voAt: 0.3, ff: 4.2, speed: 1.5,
-      labels: [fn('禮堂：吃飯・檢討・營包・早操', U(85.5, 9, 7.2), '13', { k: 0.5, off: 5.5 })] },
-    { stop: 0.6, face: U(98, 8.5, F1) },
-    { walk: [U(88.6, 12.9, F1), U(87.8, 14.2, F1), U(87.8, 15.4, F1), U(87.4, 16.4, 0.1), U(83.5, 16.3, 0.1), U(80.5, 14.4, F1), U(76.5, CV, F1), U(73.6, 13.5, F1), U(71.4, 13.1, F1)], vo: '14', voAt: 0.2, ff: 4.0, speed: 1.5, cam: follow() },
-    { walk: [{ p: U(71.05, 12.2, F1), cam: stairCamE }, U(71.05, 11.75, F1), U(71.05, 10.1, F1 + half / 2), U(71.05, 8.5, F1 + half), U(71.25, 7.4, F1 + half), U(72.35, 7.4, F1 + half), U(72.55, 8.5, F1 + half), U(72.55, 10.1, F1 + half * 1.5), U(72.55, 11.75, F2), U(72.3, 12.9, F2), { p: U(71.2, CV, F2), cam: follow() }].concat(into(c6, 68.6, -1)), ff: 2.8, speed: 1.4 },
-    { stop: 0, vo: '15', face: inside(c6), labels: [fn('五、六年級教室：睡覺', U(65.4, 7, F2 + 2.4), '15', { k: 0.05, color: 'rgba(40,70,160,0.92)' })] },
-    { walk: outOf(c6, 68.6, -1).concat([U(60, CV, F2)]).concat(into(eng, 49.9, -1)), ff: 4.0, speed: 1.5 },
-    { stop: 0, vo: '16', face: inside(eng), pad: 0.6, labels: [fn('英語教室：放行李', U(46.75, 7, F2 + 2.4), '16', { k: 0.0 })] },
-    { walk: outOf(eng, 49.9, -1).concat([U(42, CV, F2)]).concat(into(lib, 34.2, -1)), ff: 4.0, speed: 1.5 },
-    { stop: 0, vo: '17', face: inside(lib), pad: 0.5, labels: [fn('圖書室：睡覺', U(37.35, 7, F2 + 2.4), '17', { k: 0.0, color: 'rgba(40,70,160,0.92)' })] },
-    { walk: outOf(lib, 34.2, -1).concat([U(31.5, CV, F2), U(29.8, CV, F2), U(28.0, CV, F2), { p: U(26.6, 12.75, F2), cam: meetCam }, U(26.6, 11.7, F2), U(26.0, 10.9, F2)]), ff: 3.2, speed: 1.4 },
-    { stop: 0, vo: '18', face: U(21, 7, F2), labels: [fn('會議室：早餐・吹風機', U(21, 7, F2 + 2.4), '18', { k: 0.05 })] },
-    { walk: [U(26.6, 11.7, F2), { p: U(26.6, 12.75, F2), cam: corr2 }, U(26.0, 13.6, F2), U(24.9, 14.0, F2), { p: U(24.6, 14.75, F2), cam: prinCam }, U(24.6, 15.6, F2), U(23.9, 16.5, F2)], ff: 2.2, speed: 1.3 },
-    { stop: 0, vo: '19', face: U(19.5, 17.5, F2), pad: 0.6, labels: [fn('校長室：團本工作區', U(19.5, 18, F2 + 2.4), '19', { k: 0.05, color: 'rgba(176,64,40,0.93)' })] }] };
+    { aerial: 2.6, face: E, keys: [{ t: 0, p: TOP2, l: C0, fov: 40 }, { t: 1.5, p: U(-15, 34.6, 14), l: U(4, 34.8, 1.0), fov: 50 }, { t: 2.6, p: U(-5.4, 34.45, 1.8), l: U(-1.0, 34.9, 1.0), fov: 52 }] },
+    // 從校門走進去：左手邊是穿堂，穿過穿堂到走廊
+    { walk: [U(1.5, 34.6, 0.1), U(6.5, 33.0, 0.1), U(11, 29.5, 0.1), U(14.2, 25, 0.1), U(15.8, 21.4, F1), U(18.0, 18.0, F1), U(20.6, 15.4, F1), U(23.0, CV, F1), U(27.5, CV, F1)], vo: '09', ff: 4.0, speed: 1.5,
+      labels: [fn('穿堂', U(17.2, 18.0, F1 + 2.9), '09', { k: 0.5, off: 3.5 })] },
+    { walk: [U(31.5, CV, F1)], vo: '10', cam: corrCam, speed: 1.4,
+      labels: [fn('四年級教室', U(37.35, 12.6, F1 + 2.9), '10', { k: 0.3, fs: 26, off: 3.4 }), fn('三、二、一年級教室', U(54.5, 12.6, F1 + 2.9), '10', { k: 0.55, fs: 26, lift: 0.12, off: 2.6 })] },
+    ...peek(c4, 0, 1, '11', '四年級教室：哥姐休息', { color: STAFF, cam: corrCam }),
+    ...peek(c3, 0, 1, '12', '一、二、三年級教室：小朋友上課', { ff: 2.0 }),
+    // 走到底是禮堂：沿走廊往東，經過廁所，走過一條窄窄的走廊，推開禮堂的門
+    { walk: [U(52, CV, F1), U(62, CV, F1), U(70, CV, F1), U(77.5, CV, F1), U(82.5, CV, F1), U(84.0, 13.5, F1)], vo: '13', voAt: 0.3, ff: 4.2, speed: 1.5,
+      labels: [fn('禮堂：吃飯・檢討・營包・早操', U(92, 8.5, 6.4), '13', { k: 0.55, off: 9 })] },
+    { stop: 0.5, face: U(90, 13.5, F1), open: ['hallW1', 'hallW2'], openAt: 0.0, doorDur: 0.6 },
+    { walk: [{ p: U(85.4, 13.5, F1), cam: hallCam }, U(87.0, 13.3, F1), U(88.4, 12.4, F1)], speed: 1.1 },
+    { stop: 0.5, waitVo: true, pad: 0.2, face: U(98, 8.5, F1) },
+    { walk: [U(87.2, 13.4, F1), { p: U(85.0, 13.5, F1), cam: follow() }, U(82.5, CV, F1), U(77.5, CV, F1), U(73.8, 13.4, F1), U(71.6, 13.1, F1)], vo: '14', voAt: 0.2, ff: 3.6, speed: 1.5 },
+    { walk: [{ p: U(71.05, 12.2, F1), cam: stairCamE }, U(71.05, 11.75, F1), U(71.05, 10.1, F1 + half / 2), U(71.05, 8.5, F1 + half), U(71.25, 7.4, F1 + half), U(72.35, 7.4, F1 + half), U(72.55, 8.5, F1 + half), U(72.55, 10.1, F1 + half * 1.5), U(72.55, 11.75, F2), U(72.3, 12.9, F2), { p: U(71.2, CV, F2), cam: follow() }], ff: 2.8, speed: 1.4 },
+    ...peek(c6, 1, -1, '15', '五、六年級教室：睡覺', { color: SLEEP }),
+    ...peek(eng, 0, -1, '16', '英語教室：放行李', { pre: [U(60, CV, F2), U(55, CV, F2)], ff: 3.6, pad: 0.6 }),
+    ...peek(lib, 0, -1, '17', '圖書室：睡覺', { pre: [U(46, CV, F2)], ff: 3.0, color: SLEEP, pad: 0.5 }),
+    // 圖書室西邊的玻璃門 → 樓梯口：正對面就是會議室的門
+    { walk: [U(34.6, CV, F2)], speed: 1.3 },
+    { stop: 0.45, face: U(30, CV, F2), open: ['glass2a', 'glass2b'], openAt: 0.0, doorDur: 0.6 },
+    { walk: [U(32.7, CV, F2), U(31.0, 13.5, F2), U(30.3, 13.5, F2)], speed: 1.5, ff: 1.5 },
+    { stop: 0.45, face: U(26, 13.5, F2), open: 'meet', openAt: 0.0, doorDur: 0.6 },
+    { walk: [{ p: U(29.0, 13.5, F2), cam: meetCam }, U(28.0, 13.3, F2), U(27.0, 12.6, F2)], speed: 1.3, vo: '18', voAt: 0.25, labels: [fn('會議室：早餐・吹風機', U(23.8, 8, F2 + 2.4), '18', { k: 0.05, off: { at: '18' } })] },
+    { stop: 0, waitVo: true, pad: 0.2, face: U(23.8, 8.4, F2) },
+    // 樓梯口正前方的小樓梯 → 往西 → 往南，右手邊是校長室
+    { walk: [U(28.2, 13.5, F2), U(29.6, 13.7, F2), { p: U(31.0, 14.4, F2), cam: stepCam }, U(31.1, 15.2, F2 + 0.15), U(31.1, 15.6, F2 + 0.3), U(31.0, 16.1, FP), U(30.0, 16.4, FP), U(26.0, 16.3, FP), U(23.4, 16.6, FP), { p: U(23.0, 17.8, FP), cam: passCam }, U(23.0, 19.8, FP), U(22.9, 20.65, FP)], vo: '19', voAt: 0.6, ff: 2.2, speed: 1.4 },
+    { stop: 0.45, face: U(18, 20.65, FP), open: 'prin', openAt: 0.0, doorDur: 0.6 },
+    { walk: [{ p: U(21.6, 20.65, FP), cam: prinCam }, U(20.4, 20.65, FP), U(19.5, 20.2, FP)], speed: 1.1,
+      labels: [fn('校長室：團本工作區', U(17.2, 19.5, FP + 2.2), '19', { k: 0.55, color: STAFF, off: 'scene' })] },
+    { stop: 0.8, waitVo: true, pad: 0.4, face: U(14.4, 19.4, FP) }] };
 
-  const B = { key: 'v2b', name: '必修2-國幼班', start: U(40, 56.9, F1), yaw0: -0.24, follow: { dist: 4.2, height: 2.3 }, cam0: follow(), labels: [], steps: [
-    { aerial: 2.2, face: U(40, 60, F1), keys: [{ t: 0, p: U(24, 24, 30), l: U(46, 58, 0), fov: 50 }, { t: 2.2, p: U(39.3, 52.6, 2.7), l: U(40.2, 59.5, 1.2), fov: 54 }] },
-    { walk: [{ p: U(40, 58.0, F1), cam: kCam }, U(40, 59.4, F1), U(41.2, 60.6, F1)], speed: 1.1, vo: '20', voAt: 0.1,
-      labels: [fn('國幼班：睡覺', U(45, 62, F1 + 2.4), '20', { k: 0.2, color: 'rgba(40,70,160,0.92)', off: 'scene' })] },
-    { stop: 1.0, face: U(36, 62, F1) },
-    { aerial: 0, vo: '21', voAt: 0.2, face: U(36, 62, F1), keys: [{ t: 0, p: U(73, 49.5, 4.6), l: U(84.5, 58, 1.8), fov: 54 }, { t: 'end', p: U(75, 49.6, 4.4), l: U(85, 58, 1.8), fov: 54 }],
-      labels: [fn('遊樂器材區：小朋友不能過去', U(83.5, 58.5, 4.8), '21', { k: 0.1, color: 'rgba(176,64,40,0.95)', fs: 32 })] }] };
+  const B = { key: 'v2b', name: '必修2-國幼班', start: U(25.5, 57.0, F1), yaw0: 1.3, follow: { dist: 3.4, height: 1.9 }, cam0: follow(), labels: [], steps: [
+    { aerial: 2.4, face: U(32, 60, F1), keys: [{ t: 0, p: U(26, 30, 30), l: U(36, 60, 0), fov: 50 }, { t: 2.4, p: U(22.4, 55.8, 2.3), l: U(30, 59.6, 1.0), fov: 54 }] },
+    { walk: [U(28.2, 58.6, F1), U(30.9, 59.95, F1)], speed: 1.4 },
+    { stop: 0.45, face: U(40, 59.95, F1), open: 'kWest', openAt: 0.0, doorDur: 0.6 },
+    { walk: [{ p: U(32.8, 59.95, F1), cam: kCorr }, U(40, 59.95, F1), U(50, 59.95, F1), U(53.4, 59.95, F1)], ff: 4.5, speed: 1.5 },
+    { stop: 0.45, face: U(60, 59.95, F1), open: 'kIn', openAt: 0.0, doorDur: 0.6 },
+    { walk: [{ p: U(55.0, 59.95, F1), cam: kCam }, U(56.6, 60.3, F1), U(58.2, 61.4, F1)], speed: 1.3, vo: '20', voAt: 0.2, labels: [fn('國幼班：睡覺', U(65, 62, F1 + 2.4), '20', { k: 0.35, color: SLEEP, off: { at: '21', k: 0 } })] },
+    { stop: 0, waitVo: true, pad: 0.3, face: U(70, 63, F1) },
+    { aerial: 0, vo: '21', voAt: 0.2, face: U(70, 63, F1), keys: [{ t: 0, p: U(73, 49.5, 4.6), l: U(84.0, 58.2, 1.6), fov: 54 }, { t: 'end', p: U(75, 49.6, 4.4), l: U(84.5, 58.2, 1.6), fov: 54 }],
+      labels: [fn('溜滑梯：小朋友都不能去玩', U(83.5, 58.5, 4.6), '21', { k: 0.1, color: 'rgba(176,64,40,0.95)', fs: 32 })] }] };
 
   RB.V2 = [A, B].map(sc => RB.compile(sc));
 };

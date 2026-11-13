@@ -137,7 +137,7 @@ RB.makeTour = () => {
 
   // 自由視角時的常駐標籤
   const FL = [];
-  for (const r of RB.ROOMS) FL.push({ text: r.name, pos: U(mid(r), vmid(r), fl(r.f) + 2.4), max: 70, floor: r.f, small: true });
+  for (const r of RB.ROOMS) if (r.name) FL.push({ text: r.name, pos: U(mid(r), vmid(r), fl(r.f) + 2.4), max: 70, floor: r.f, small: true });
   FL.push({ text: '大門口', pos: U(0, 34.8, 3.4), max: 220 }, { text: '禮堂', pos: U(95, 8.5, 9), max: 260 }, { text: '國幼班', pos: U(54.5, 61, 4.5), max: 220 }, { text: '司令台', pos: U(63, 16.8, 4.5), max: 160, small: true },
     { text: '遊樂器材', pos: U(84, 58.5, 3.6), max: 160, small: true }, { text: '籃球場', pos: U(115, 25, 0.5), max: 200, small: true },
     { text: '瑞北國小', pos: W3(2, 6, 14), max: 3000, min: 230, hot: true }, { text: '台9線', pos: W3(-81, -60, 1), max: 1200, min: 40 }, { text: '東輪機車行', pos: W3(-97, 21, 5), max: 700 }, { text: '林上商號（雜貨店）', pos: W3(-186, 138, 5), max: 700 }, { text: '公車站', pos: W3(-75.6, 78, 3), max: 400, small: true });

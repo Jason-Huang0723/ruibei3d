@@ -3,19 +3,8 @@ RB.W3 = (x, y, h) => [x, RB.H(x, y) + h, -y];
 function cr(p0, p1, p2, p3, t) { const t2 = t * t, t3 = t2 * t; return 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3); }
 RB.pathAt = (keys, t) => { const n = keys.length; if (t <= keys[0].t) return keys[0]; if (t >= keys[n - 1].t) return keys[n - 1]; let i = 0; while (i < n - 2 && t > keys[i + 1].t) i++; const k0 = keys[Math.max(0, i - 1)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(n - 1, i + 2)]; let u = (t - k1.t) / (k2.t - k1.t); u = u * u * (3 - 2 * u) * 0.45 + u * 0.55; const f = a => [0, 1, 2].map(j => cr(k0[a][j], k1[a][j], k2[a][j], k3[a][j], u)); return { p: f('p'), l: f('l'), fov: (k1.fov || 50) + ((k2.fov || 50) - (k1.fov || 50)) * u }; };
 
-// 角色：three.js 範例的 Xbot（Mixamo 原地走路動畫）。步伐對應的速度約 1.4 m/s，動畫進度跟走過的距離綁在一起，腳不會滑。
-RB.XBOT_URL = 'https://raw.githubusercontent.com/mrdoob/three.js/r160/examples/models/gltf/Xbot.glb';
-RB.STRIDE = 1.4;
-RB.loadCharacter = async () => {
-  const g = await new GLTFLoader().loadAsync(RB.XBOT_URL); const root = g.scene;
-  const body = new THREE.MeshStandardMaterial({ color: 0xf08a3c, roughness: 0.55 }), joint = new THREE.MeshStandardMaterial({ color: 0x33393f, roughness: 0.6 });
-  root.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; o.frustumCulled = false; o.material = (o.material && /Joint/i.test(o.material.name)) ? joint : body; } });
-  const mixer = new THREE.AnimationMixer(root), clip = n => g.animations.find(a => a.name === n);
-  const walk = mixer.clipAction(clip('walk')), idle = mixer.clipAction(clip('idle'));
-  for (const a of [walk, idle]) { a.play(); a.setEffectiveWeight(0); }
-  RB.CH = { root, mixer, walk, idle, walkDur: clip('walk').duration, idleDur: clip('idle').duration };
-  return root;
-};
+// 角色：山友吉祥物（RB.makeMascot，在 06a_mascot.js）。走路動作的進度跟走過的距離綁在一起，腳不會滑。
+RB.loadCharacter = async () => { const m = RB.makeMascot(); m.root.traverse(o => { if (o.isMesh) { o.castShadow = true; } }); RB.CH = m; return m.root; };
 
 // ---- 把場景腳本編譯成時間軸 ----
 // 步驟：{walk:[點或 {p, cam, label, caption}], speed, ff(快轉倍數), cam}、{stop:秒, face, cam, label, caption}、{aerial:秒, keys, blend}
@@ -28,10 +17,12 @@ RB.compile = sc => {
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
   // 配音對時：step.vo（句子編號或陣列）→ 句子開始時間記在 sc.vo；停留／空拍的長度依句子長度自動算
   const VOD = id => (RB.VO && RB.VO[id]) || 2, GAP = sc.voGap || 0.22, vo = [], A = {}, pend = []; let voEnd = -9;
+  const doorEv = [];
   const say = (ids, tmin) => { for (const id of [].concat(ids || [])) { const a = Math.max(tmin, voEnd + GAP); vo.push({ id, t: a, d: VOD(id) }); A[id] = a; voEnd = a + VOD(id); tmin = a; } };
   const tref = (r, base, end) => (r === 'end' ? end : typeof r === 'number' ? base + r : (A[r.at] + (r.k || 0) * VOD(r.at) + (r.off || 0)));
   for (const st of sc.steps) {
     const t0s = t; if (st.labels) pend.push([st, t0s]);
+    for (const [key, to] of [['open', 1], ['close', 0]]) for (const d of [].concat(st[key] || [])) { const id = Array.isArray(d) ? d[0] : d, at = Array.isArray(d) ? d[1] : (st[key + 'At'] || 0); doorEv.push({ id, t: t0s + at, to, dur: st.doorDur || 0.8 }); }
     if (st.walk) {
       const pts = [pos], ms = [];
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
@@ -47,7 +38,7 @@ RB.compile = sc => {
     } else if (st.stop !== undefined) {
       // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
       const auto = !st.cam && (lastCam.mode || 'follow') === 'follow'; say(st.vo, t + (st.voAt === undefined ? 0.2 : st.voAt));
-      const sd = Math.max(st.stop || 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
+      const sd = Math.max(st.stop || 0, (st.vo || st.waitVo) ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
       const seg = { type: 'stop', t0: t, t1: t + sd, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
@@ -60,6 +51,7 @@ RB.compile = sc => {
     }
   }
   for (const [st, t0s] of pend) { const seg = segs.find(g => g.t0 >= t0s - 1e-9) || segs[segs.length - 1]; for (const L of st.labels) { const a = L.on ? A[L.on] + (L.k || 0) * VOD(L.on) : t0s + (L.at || 0), b = L.off === undefined ? seg.t1 : L.off === 'scene' ? t : typeof L.off === 'number' ? a + L.off : A[L.off.at || L.off] + (L.off.k === undefined ? 1 : L.off.k) * VOD(L.off.at || L.off); labels.push(Object.assign({}, L, { in: a, out: b })); } }
+  doorEv.sort((p, q) => p.t - q.t); sc.doorEv = doorEv;
   sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; sc.vo = vo; return sc;
 };
 const angLerp = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * k; };
@@ -83,13 +75,13 @@ RB.step = (dt, snap) => {
   const P = RB.player, sc = P.sc; P.t = Math.min(sc.dur, P.t + dt); const e = RB.evalScene(sc, P.t); P.ev = e; const seg = e.seg, ff = seg.ff || 1, ch = RB.CH;
   if (e.yawT !== null) P.yaw = snap ? e.yawT : angLerp(P.yaw, e.yawT, 1 - Math.exp(-dt * ff * (seg.type === 'walk' ? 8 : 4)));
   // 角色姿勢：走路動畫的進度＝走過的距離 ÷ 步伐速度
-  ch.root.position.set(e.pos[0], e.pos[1], e.pos[2]); ch.root.rotation.y = P.yaw;
-  ch.walk.setEffectiveWeight(e.walkW); ch.idle.setEffectiveWeight(1 - e.walkW); ch.walk.time = (e.dist / RB.STRIDE) % ch.walkDur; ch.idle.time = (P.t % ch.idleDur); ch.mixer.update(0);
+  ch.root.position.set(e.pos[0], e.pos[1], e.pos[2]); ch.root.rotation.y = P.yaw; ch.update(e.walkW, e.dist, P.t);
+  RB.applyDoors(sc, P.t);
   // 鏡頭
   const c = e.cam || { mode: 'follow' }; if (c !== P.camObj) { P.camObj = c; P.camT0 = P.t; P.from = P.cam ? { p: P.cam.slice(), l: P.look.slice(), f: P.fov } : null; if (c.cut || !P.cam) snap = true; }
-  const cy = (snap && e.yawT !== null) ? e.yawT : P.yaw, head = [e.pos[0], e.pos[1] + (c.lookH === undefined ? 1.2 : c.lookH), e.pos[2]], fwd = [Math.sin(cy), 0, Math.cos(cy)], right = [Math.cos(cy), 0, -Math.sin(cy)];
+  const cy = (snap && e.yawT !== null) ? e.yawT : P.yaw, head = [e.pos[0], e.pos[1] + (c.lookH === undefined ? 0.9 : c.lookH), e.pos[2]], fwd = [Math.sin(cy), 0, Math.cos(cy)], right = [Math.cos(cy), 0, -Math.sin(cy)];
   let dp, dl, fov = c.fov || sc.fov || 52, mode = c.mode || 'follow', expo = 0;
-  if (mode === 'follow') { const f = Object.assign({ dist: 3.6, height: 2.0, side: 0.45, lookH: 1.3, ahead: 1.6, tau: 0.5 }, sc.follow || {}, c); dp = [e.pos[0] - fwd[0] * f.dist + right[0] * f.side, e.pos[1] + f.height, e.pos[2] - fwd[2] * f.dist + right[2] * f.side]; dl = [e.pos[0] + fwd[0] * f.ahead, e.pos[1] + f.lookH, e.pos[2] + fwd[2] * f.ahead]; expo = f.tau; fov = c.fov || f.fov || fov; }
+  if (mode === 'follow') { const f = Object.assign({ dist: 3.3, height: 1.8, side: 0.4, lookH: 0.95, ahead: 1.6, tau: 0.5 }, sc.follow || {}, c); dp = [e.pos[0] - fwd[0] * f.dist + right[0] * f.side, e.pos[1] + f.height, e.pos[2] - fwd[2] * f.dist + right[2] * f.side]; dl = [e.pos[0] + fwd[0] * f.ahead, e.pos[1] + f.lookH, e.pos[2] + fwd[2] * f.ahead]; expo = f.tau; fov = c.fov || f.fov || fov; }
   else if (mode === 'aerial') { const k = RB.pathAt(c.keys, e.tau); dp = k.p; dl = k.l; fov = k.fov || fov; if (c.blend && P.from) { const b = smooth((P.t - P.camT0) / c.blend); dp = lerp3(P.from.p, dp, b); dl = lerp3(P.from.l, dl, b); fov = P.from.f + (fov - P.from.f) * b; } }
   else if (mode === 'hold') { dp = P.from ? P.from.p : P.cam; dl = head; expo = c.tau || 0.6; }
   else { // fixed／track：固定機位，track 會跟著看人
@@ -103,6 +95,10 @@ RB.step = (dt, snap) => {
   if (mode === 'follow') { const x = P.cam[0], y = -P.cam[2], g = RB.inPoly(RB.CAMPUS, x, y) ? RB.GROUND + 0.5 : RB.H(x, y) + 0.8; if (P.cam[1] < g) P.cam[1] = g; }
   const ind = c.indoor ? 1 : 0; P.indoor = snap ? ind : P.indoor + (ind - P.indoor) * (1 - Math.exp(-dt / 0.4));
 };
+// 門：場景沒有開關門事件時全部開著（舊的導覽路線會直接穿過門口）；有事件的場景一開始全部關著
+RB.applyDoors = (sc, t) => { if (!RB.DOORS) return; const def = (sc.doorEv && sc.doorEv.length) ? 0 : 1, st = {};
+  for (const ev of sc.doorEv || []) { if (t < ev.t) break; const k = Math.min(1, (t - ev.t) / ev.dur), from = st[ev.id] === undefined ? def : st[ev.id]; st[ev.id] = from + (ev.to - from) * k * k * (3 - 2 * k); }
+  for (const id in RB.DOORS) RB.setDoor(id, st[id] === undefined ? def : st[id]); };
 RB.applyCamera = cam => { const P = RB.player; cam.position.set(P.cam[0], P.cam[1], P.cam[2]); cam.lookAt(P.look[0], P.look[1], P.look[2]); cam.fov = P.fov; cam.updateProjectionMatrix(); };
 
 // ---- 畫面上的字（標籤、說明字幕、場景標題）——互動播放與匯出共用 ----
