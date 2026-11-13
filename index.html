@@ -652,12 +652,17 @@ function tauAt(seg, s) { const { v, ta, L, T } = seg, sa = v * ta / 2; if (s <= 
 RB.compile = sc => {
   const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' }, resume = false;
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
+  // 配音對時：step.vo（句子編號或陣列）→ 句子開始時間記在 sc.vo；停留／空拍的長度依句子長度自動算
+  const VOD = id => (RB.VO && RB.VO[id]) || 2, GAP = sc.voGap || 0.22, vo = [], A = {}, pend = []; let voEnd = -9;
+  const say = (ids, tmin) => { for (const id of [].concat(ids || [])) { const a = Math.max(tmin, voEnd + GAP); vo.push({ id, t: a, d: VOD(id) }); A[id] = a; voEnd = a + VOD(id); tmin = a; } };
+  const tref = (r, base, end) => (r === 'end' ? end : typeof r === 'number' ? base + r : (A[r.at] + (r.k || 0) * VOD(r.at) + (r.off || 0)));
   for (const st of sc.steps) {
+    const t0s = t; if (st.labels) pend.push([st, t0s]);
     if (st.walk) {
       const pts = [pos], ms = [];
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
       const curve = new THREE.CatmullRomCurve3(pts.map(V3), false, 'centripetal', 0.5), div = Math.max(240, pts.length * 80), lens = curve.getLengths(div), L = lens[div];
-      const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta;
+      const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta; say(st.vo, t + (st.voAt === undefined ? 0.15 : st.voAt));
       const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || (resume ? Object.assign({}, lastCam, { cut: false }) : lastCam), marks: [] }; resume = false;
       for (const m of ms) { const s = lens[Math.round(m.i / (pts.length - 1) * div)], tv = t + tauAt(seg, s) / ff;
         if (m.cam) seg.marks.push({ s, cam: m.cam });
@@ -667,17 +672,21 @@ RB.compile = sc => {
       segs.push(seg); t = seg.t1; D += L; pos = pts[pts.length - 1].slice();
     } else if (st.stop !== undefined) {
       // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
-      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow';
-      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
+      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow'; say(st.vo, t + (st.voAt === undefined ? 0.2 : st.voAt));
+      const sd = Math.max(st.stop || 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
+      const seg = { type: 'stop', t0: t, t1: t + sd, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
       segs.push(seg); t = seg.t1;
-    } else if (st.aerial) {
-      const seg = { type: 'aerial', t0: t, t1: t + st.aerial, ff: 1, pos: pos.slice(), face: st.face, cam: { mode: 'aerial', keys: st.keys, blend: st.blend || 0, cut: !st.blend }, D0: D }; lastCam = st.after || { mode: 'follow' };
+    } else if (st.aerial !== undefined) {
+      say(st.vo, t + (st.voAt === undefined ? 0.3 : st.voAt)); const ad = Math.max(typeof st.aerial === 'number' ? st.aerial : 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.4 : st.pad) : 0);
+      const keys = st.keys.map(k => Object.assign({}, k, { t: tref(k.t, 0, ad) - (typeof k.t === 'object' ? t : 0) }));
+      const seg = { type: 'aerial', t0: t, t1: t + ad, ff: 1, pos: pos.slice(), face: st.face, cam: { mode: 'aerial', keys, blend: st.blend || 0, cut: !st.blend }, D0: D }; lastCam = st.after || { mode: 'follow' };
       segs.push(seg); t = seg.t1;
     }
   }
-  sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; return sc;
+  for (const [st, t0s] of pend) { const seg = segs.find(g => g.t0 >= t0s - 1e-9) || segs[segs.length - 1]; for (const L of st.labels) { const a = L.on ? A[L.on] + (L.k || 0) * VOD(L.on) : t0s + (L.at || 0), b = L.off === undefined ? seg.t1 : L.off === 'scene' ? t : typeof L.off === 'number' ? a + L.off : A[L.off.at || L.off] + (L.off.k === undefined ? 1 : L.off.k) * VOD(L.off.at || L.off); labels.push(Object.assign({}, L, { in: a, out: b })); } }
+  sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; sc.vo = vo; return sc;
 };
 const angLerp = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * k; };
 const yawTo = (from, to) => Math.atan2(to[0] - from[0], to[2] - from[2]);
@@ -729,16 +738,19 @@ const win = (t, a, b, f) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
 const _v = new THREE.Vector3();
 function drawLabel(g, L, a, W, H, cam, S) {
   _v.set(L.pos[0], L.pos[1], L.pos[2]).project(cam); if (_v.z > 1 || _v.z < -1) return; const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H; if (sx < -100 || sx > W + 100 || sy < -100 || sy > H + 100) return;
-  const fs = Math.round((L.small ? 26 : 32) * S), pad = fs * 0.45, bh = fs * 1.5; g.font = '700 ' + fs + 'px ' + RB.FONT; const tw = g.measureText(L.text).width, ty = sy - (L.lift !== undefined ? L.lift * H : 64 * S);
-  g.globalAlpha = a; g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = Math.max(2, 3 * S); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, ty + bh / 2); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6 * S, 0, Math.PI * 2); g.fill();
-  g.fillStyle = L.hot ? 'rgba(176,64,40,0.93)' : 'rgba(20,28,36,0.84)'; g.beginPath(); g.roundRect(sx - tw / 2 - pad, ty - bh / 2, tw + pad * 2, bh, bh * 0.3); g.fill(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(L.text, sx, ty + fs * 0.05); g.globalAlpha = 1;
+  const fs = Math.round((L.fs || (L.small ? 26 : 32)) * S), pad = fs * 0.45, bh = fs * 1.5; g.font = '700 ' + fs + 'px ' + RB.FONT; const tw = g.measureText(L.text).width, off = L.dx !== undefined || L.dy !== undefined;
+  const bx = off ? sx + (L.dx || 0) * S : sx, ty = off ? sy + (L.dy || 0) * S : sy - (L.lift !== undefined ? L.lift * H : 64 * S);
+  g.globalAlpha = a; g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = Math.max(2, 3 * S); g.beginPath(); g.moveTo(sx, sy);
+  if (off) g.lineTo(bx + (Math.abs(L.dx || 0) > Math.abs(L.dy || 0) ? -Math.sign(L.dx) * (tw / 2 + pad) : 0), ty + (Math.abs(L.dx || 0) > Math.abs(L.dy || 0) ? 0 : -Math.sign(L.dy || 1) * bh / 2)); else g.lineTo(sx, ty + bh / 2);
+  g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6 * S, 0, Math.PI * 2); g.fill();
+  g.fillStyle = L.color || (L.hot ? 'rgba(176,64,40,0.93)' : 'rgba(20,28,36,0.84)'); g.beginPath(); g.roundRect(bx - tw / 2 - pad, ty - bh / 2, tw + pad * 2, bh, bh * 0.3); g.fill(); if (L.edge) { g.strokeStyle = L.edge; g.lineWidth = Math.max(2, 2.5 * S); g.stroke(); } g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(L.text, bx, ty + fs * 0.05); g.globalAlpha = 1;
 }
 RB.drawOverlay = (g, W, H, cam, opt) => {
   const P = RB.player, sc = P.sc, st = P.t, S = Math.max(Math.min(W / 1920, H / 1080) * (opt.scale || 1), opt.minS || 0), show = opt.labels !== false, top = opt.top || 0; g.save();
   if (show) for (const L of sc.allLabels) { const a = win(st, L.in, L.out, 0.5); if (a > 0.01) drawLabel(g, L, a, W, H, cam, S); }
   // 說明字幕（同一時間只顯示最新的一則）
   let cap = null; for (const c of sc.allCaps) if (st >= c.in - 0.4 && st < c.out + 0.4 && (!cap || c.in > cap.in)) cap = c;
-  if (show && cap) { const a = win(st, cap.in - 0.4, cap.out + 0.4, 0.4); if (a > 0.01) { const fsT = Math.round(36 * S), fs = Math.round(31 * S), maxW = Math.min(W - 60 * S, 1360 * S); g.font = '500 ' + fs + 'px ' + RB.FONT; const lines = cap.text ? wrapText(g, cap.text, maxW - 70 * S) : [];
+  if (show && cap && opt.caps !== false) { const a = win(st, cap.in - 0.4, cap.out + 0.4, 0.4); if (a > 0.01) { const fsT = Math.round(36 * S), fs = Math.round(31 * S), maxW = Math.min(W - 60 * S, 1360 * S); g.font = '500 ' + fs + 'px ' + RB.FONT; const lines = cap.text ? wrapText(g, cap.text, maxW - 70 * S) : [];
       g.font = '700 ' + fsT + 'px ' + RB.FONT; const tW = g.measureText(cap.title).width; g.font = '500 ' + fs + 'px ' + RB.FONT;
       const bw = Math.min(maxW, Math.max(tW, ...lines.map(l => g.measureText(l).width), 260 * S) + 70 * S), bh = fsT * 1.45 + lines.length * fs * 1.5 + 34 * S, x = W / 2 - bw / 2, y = H - bh - (opt.bottom !== undefined ? opt.bottom : 44 * S);
       g.globalAlpha = a; g.fillStyle = 'rgba(14,20,26,0.86)'; g.beginPath(); g.roundRect(x, y, bw, bh, 16 * S); g.fill(); g.fillStyle = '#e0a640'; g.fillRect(x, y + 16 * S, 6 * S, bh - 32 * S);
@@ -746,7 +758,7 @@ RB.drawOverlay = (g, W, H, cam, opt) => {
   // 場景標題
   if (show && sc.title) { const a = win(st, 0.3, 4.2, 0.7); if (a > 0.01) { g.globalAlpha = a; g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 16 * S; g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.font = '700 ' + Math.round(64 * S) + 'px ' + RB.FONT; g.fillText(sc.title, 72 * S, top + 128 * S); if (sc.sub) { g.font = '500 ' + Math.round(34 * S) + 'px ' + RB.FONT; g.fillText(sc.sub, 74 * S, top + 180 * S); } g.shadowBlur = 0; g.globalAlpha = 1; } }
   // 快轉標示
-  const fs_ = P.ev && P.ev.seg; if (show && fs_ && fs_.ff > 1) { const a = win(st, fs_.t0, fs_.t1, 0.3); g.globalAlpha = a; g.font = '700 ' + Math.round(30 * S) + 'px ' + RB.FONT; g.fillStyle = 'rgba(14,20,26,0.78)'; g.beginPath(); g.roundRect(W - 200 * S, top + 40 * S, 156 * S, 54 * S, 12 * S); g.fill(); g.fillStyle = '#ffcf70'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('▶▶ ' + fs_.ff + '×', W - 122 * S, top + 67 * S); g.globalAlpha = 1; }
+  const fs_ = P.ev && P.ev.seg; if (show && !opt.noFF && fs_ && fs_.ff > 1) { const a = win(st, fs_.t0, fs_.t1, 0.3); g.globalAlpha = a; g.font = '700 ' + Math.round(30 * S) + 'px ' + RB.FONT; g.fillStyle = 'rgba(14,20,26,0.78)'; g.beginPath(); g.roundRect(W - 200 * S, top + 40 * S, 156 * S, 54 * S, 12 * S); g.fill(); g.fillStyle = '#ffcf70'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('▶▶ ' + fs_.ff + '×', W - 122 * S, top + 67 * S); g.globalAlpha = 1; }
   // 頭尾淡入淡出
   if (opt.fade !== false) { const f = Math.max(0, 1 - st / 0.6, 1 - (sc.dur - st) / 0.6); if (f > 0) { g.fillStyle = 'rgba(0,0,0,' + Math.min(1, f) + ')'; g.fillRect(0, 0, W, H); } }
   g.restore();
@@ -899,6 +911,84 @@ RB.makeTour = () => {
   RB.FREE_LABELS = FL;
   RB.SHOP = shop;
 };
+/* ================= 9. 必修2 影片用場景（Google 小姐配音對時；匯出時不畫說明字幕） ================= */
+RB.VO = {"01":3.969,"02":4.081,"03":3.185,"04":7.465,"05":3.826,"06":3.657,"07":3.815,"08":7.52,"09":3.32,"10":3.962,"11":2.614,"12":4.169,"13":4.866,"14":2.661,"15":3.105,"16":1.509,"17":2.029,"18":5.889,"19":3.472,"20":3.725,"21":4.986,"22":4.445,"23":2.093,"24":6.094,"25":1.565,"26":4.767,"27":3.921,"28":5.028,"29":4.01,"30":2.97,"31":6.678,"32":4.623,"33":6.217,"34":6.362,"35":3.223,"36":4.154,"37":3.406,"38":6.458,"39":2.645,"40":2.614};
+RB.makeV2 = () => {
+  const U = RB.U, S = RB.S, F1 = S.F1, F2 = S.F2, CV = 13.6, half = (F2 - F1) / 2;
+  const fl = f => (f === 2 ? F2 : F1);
+  const R = (name, f) => RB.ROOMS.find(r => r.name === name && r.f === f);
+  const mid = r => (r.u0 + r.u1) / 2;
+  const follow = o => Object.assign({ mode: 'follow', cut: true }, o || {});
+  const roomCam = (r, d, o) => { const far = (d - r.u0) < (r.u1 - d) ? r.u1 - 0.7 : r.u0 + 0.7, f = fl(r.f); return Object.assign({ mode: 'track', pos: U(far, 3.0, f + 2.65), look: U(mid(r) + (d - mid(r)) * 0.5, 8.6, f + 0.8), track: 0.4, lookH: 1.0, cut: true, indoor: true, fov: 64 }, o || {}); };
+  const into = (r, d, dir, o) => { const f = fl(r.f); return [U(d - dir * 1.3, CV, f), { p: U(d, 12.75, f), cam: roomCam(r, d, o) }, U(d, 11.7, f), U(d - dir * 0.5, 11.0, f)]; };
+  const outOf = (r, d, dir) => { const f = fl(r.f); return [U(d, 11.7, f), U(d, 12.75, f), U(d + dir * 0.7, 13.45, f), { p: U(d + dir * 1.7, CV, f), cam: follow() }]; };
+  const inside = r => U(mid(r), 7, fl(r.f) + 0.5);
+  const c4 = R('四教', 1), c3 = R('三教', 1), c2 = R('二教', 1), c1 = R('一教', 1);
+  const meet = R('會議室', 2), prin = R('校長室', 2), lib = R('圖書室', 2), eng = R('英語教室', 2), c5 = R('五教', 2), c6 = R('六教', 2);
+  const E = U(12, 34.9, 0.1);
+  // 空拍：鏡頭在校地中心西邊一點往下看，畫面上方＝東（校門在畫面下方）
+  const C0 = U(50, 33, 0), TOP = U(31, 33, 224), TOP2 = U(32.5, 33, 214);
+  const roof = (u, v) => U(u, v, 10), LBL = 'rgba(20,28,36,0.88)', L2 = 'rgba(20,92,110,0.92)', EDGE2 = '#7fe3f0';
+  const north1 = [['辦公室', 21, 0.12], ['樓梯', 31.1, 0.3, 0], ['四年級教室', 37.35, 0.5], ['三年級教室', 46.75, 0.62], ['二年級教室', 56.05, 0.74], ['一年級教室', 65.4, 0.86], ['樓梯', 71.8, 0.3, 12]];
+  const aerialLabels = north1.map(([t, u, k, dy]) => ({ text: t, pos: roof(u, 7), dx: -250, dy: dy || 0, fs: 25, color: LBL, on: '04', k, off: { at: '08', k: 0.05 } }))
+    .concat([{ text: '廁所', pos: roof(75.2, 7), dx: -250, dy: -22, fs: 25, color: LBL, on: '05', k: 0.08, off: { at: '08', k: 0.05 } },
+      { text: '禮堂', pos: U(95, 8.5, 10.5), dx: -250, fs: 25, color: LBL, on: '05', k: 0.55 },
+      { text: '國幼班', pos: U(54, 61, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.35 },
+      { text: '器材室', pos: U(26, 60, 4.5), dx: 230, fs: 25, color: LBL, on: '06', k: 0.7 },
+      { text: '操場', pos: U(42, 21.3, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.08 },
+      { text: '足球場', pos: U(62, 39, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.3 },
+      { text: '籃球場', pos: U(115, 25, 0.3), dx: 0, dy: -46, fs: 25, color: LBL, on: '07', k: 0.68 }])
+    .concat([['2F 會議室', 21, 7, -250, 0.22], ['2F 校長室', 19.5, 18, 230, 0.36], ['2F 圖書室', 37.35, 7, -250, 0.5], ['2F 英語教室', 46.75, 7, -250, 0.62], ['2F 五年級教室', 56.05, 7, -250, 0.76], ['2F 六年級教室', 65.4, 7, -250, 0.86]]
+      .map(([t, u, v, dx, k]) => ({ text: t, pos: roof(u, v), dx, fs: 25, color: L2, edge: EDGE2, on: '08', k })));
+  const stairCamE = { mode: 'track', pos: U(71.8, 7.0, F2 + 2.45), look: U(71.7, 11.2, F1 + 1.3), track: 0.55, lookH: 1.0, cut: true, indoor: true, fov: 66 };
+  const corrCam = { mode: 'track', pos: U(29.2, 14.4, F1 + 2.2), look: U(44, 13.2, F1 + 1.2), track: 0.3, lookH: 1.1, cut: true, fov: 58 };
+  const hallCam = { mode: 'track', pos: U(86.9, 3.4, 4.6), look: U(89.5, 13.0, 1.0), track: 0.45, lookH: 1.0, cut: true, indoor: true, fov: 64 };
+  const meetCam = { mode: 'track', pos: U(14.4, 3.1, F2 + 2.7), look: U(24.5, 9.5, F2 + 0.8), track: 0.35, lookH: 1.0, cut: true, indoor: true, fov: 64 };
+  const corr2 = { mode: 'track', pos: U(20.6, 13.0, F2 + 2.35), look: U(25.2, 14.2, F2 + 1.0), track: 0.5, lookH: 1.1, cut: true, indoor: true, fov: 62 };
+  const prinCam = { mode: 'track', pos: U(17.6, 20.3, F2 + 2.6), look: U(23.4, 16.0, F2 + 0.9), track: 0.4, lookH: 1.0, cut: true, indoor: true, fov: 64 };
+  const kCam = { mode: 'track', pos: U(48.5, 65.1, 2.9), look: U(40.5, 59.8, 0.6), track: 0.35, lookH: 1.0, cut: true, indoor: true, fov: 64 };
+  const fn = (text, pos, on, o) => Object.assign({ text, pos, on, k: 0.15, fs: 30, color: 'rgba(20,28,36,0.88)' }, o || {});
+
+  const A = { key: 'v2a', name: '必修2-校園', start: U(-2.6, 34.9, 0.1), yaw0: 1.33, follow: { dist: 4.2, height: 2.3 }, cam0: follow(), labels: [], steps: [
+    { aerial: 0, vo: '02', voAt: 0.35, face: E, keys: [{ t: 0, p: U(-20, 35.6, 2.2), l: U(18, 33.6, 3.8), fov: 54 }, { t: 'end', p: U(-13.5, 35.4, 2.0), l: U(18, 33.6, 3.4), fov: 54 }] },
+    { aerial: 0, vo: ['03', '04', '05', '06', '07', '08'], voAt: 0.2, pad: 0.7, face: E, labels: aerialLabels, keys: [
+      { t: 0, p: U(-13.5, 35.4, 2.0), l: U(18, 33.6, 3.4), fov: 54 },
+      { t: { at: '03', k: 0.5 }, p: U(8, 33.5, 70), l: U(52, 33, 0), fov: 46 },
+      { t: { at: '03', k: 1, off: 0.25 }, p: TOP, l: C0, fov: 40 },
+      { t: 'end', p: TOP2, l: C0, fov: 40 }] },
+    { aerial: 2.6, face: E, keys: [{ t: 0, p: TOP2, l: C0, fov: 40 }, { t: 1.5, p: U(-16, 34.6, 16), l: U(4, 34.8, 1.2), fov: 50 }, { t: 2.6, p: U(-6.2, 34.45, 2.1), l: U(-1.0, 34.9, 1.4), fov: 52 }] },
+    { walk: [U(1.5, 34.6, 0.1), U(6.5, 33.0, 0.1), U(11, 29.5, 0.1), U(14.6, 25, 0.1), U(16.2, 21.6, F1), U(18.4, 17.8, F1), U(21.6, 15.4, F1), U(25.5, CV, F1), U(29.5, CV, F1)], vo: '09', ff: 4.0, speed: 1.5,
+      labels: [fn('穿堂', U(19.5, 16.8, F1 + 2.9), '09', { k: 0.5, off: 3.5 })] },
+    { walk: [U(33, CV, F1)].concat(into(c4, 40.4, 1)), vo: '10', cam: corrCam, ff: 1.5, speed: 1.5,
+      labels: [fn('四年級教室', U(40.4, 12.6, F1 + 2.9), '10', { k: 0.3, fs: 26, off: 3.2 }), fn('三、二、一年級教室', U(54.5, 12.6, F1 + 2.9), '10', { k: 0.55, fs: 26, lift: 0.12, off: 2.4 })] },
+    { stop: 0, vo: '11', face: inside(c4), labels: [fn('四年級教室：哥姐休息', U(37.35, 7, F1 + 2.4), '11', { k: 0.05, color: 'rgba(176,64,40,0.93)' })] },
+    { walk: outOf(c4, 40.4, 1).concat([U(48, CV, F1)]).concat(into(c2, 53.0, 1)), ff: 3.4, speed: 1.5 },
+    { stop: 0, vo: '12', face: inside(c2), labels: [fn('一、二、三年級教室：小朋友上課', U(56.05, 7, F1 + 2.4), '12', { k: 0.05 })] },
+    { walk: outOf(c2, 53.0, 1).concat([U(62, CV, F1), U(70, CV, F1), U(76.5, CV, F1), U(80.5, 14.2, F1), U(83.2, 16.0, 0.1), U(86.4, 16.7, 0.1), U(87.8, 16.3, 0.1), { p: U(87.8, 15.3, F1), cam: hallCam }, U(87.8, 14.0, F1), U(88.6, 12.7, F1), U(91.5, 12.5, F1)]), vo: '13', voAt: 0.3, ff: 4.2, speed: 1.5,
+      labels: [fn('禮堂：吃飯・檢討・營包・早操', U(85.5, 9, 7.2), '13', { k: 0.5, off: 5.5 })] },
+    { stop: 0.6, face: U(98, 8.5, F1) },
+    { walk: [U(88.6, 12.9, F1), U(87.8, 14.2, F1), U(87.8, 15.4, F1), U(87.4, 16.4, 0.1), U(83.5, 16.3, 0.1), U(80.5, 14.4, F1), U(76.5, CV, F1), U(73.6, 13.5, F1), U(71.4, 13.1, F1)], vo: '14', voAt: 0.2, ff: 4.0, speed: 1.5, cam: follow() },
+    { walk: [{ p: U(71.05, 12.2, F1), cam: stairCamE }, U(71.05, 11.75, F1), U(71.05, 10.1, F1 + half / 2), U(71.05, 8.5, F1 + half), U(71.25, 7.4, F1 + half), U(72.35, 7.4, F1 + half), U(72.55, 8.5, F1 + half), U(72.55, 10.1, F1 + half * 1.5), U(72.55, 11.75, F2), U(72.3, 12.9, F2), { p: U(71.2, CV, F2), cam: follow() }].concat(into(c6, 68.6, -1)), ff: 2.8, speed: 1.4 },
+    { stop: 0, vo: '15', face: inside(c6), labels: [fn('五、六年級教室：睡覺', U(65.4, 7, F2 + 2.4), '15', { k: 0.05, color: 'rgba(40,70,160,0.92)' })] },
+    { walk: outOf(c6, 68.6, -1).concat([U(60, CV, F2)]).concat(into(eng, 49.9, -1)), ff: 4.0, speed: 1.5 },
+    { stop: 0, vo: '16', face: inside(eng), pad: 0.6, labels: [fn('英語教室：放行李', U(46.75, 7, F2 + 2.4), '16', { k: 0.0 })] },
+    { walk: outOf(eng, 49.9, -1).concat([U(42, CV, F2)]).concat(into(lib, 34.2, -1)), ff: 4.0, speed: 1.5 },
+    { stop: 0, vo: '17', face: inside(lib), pad: 0.5, labels: [fn('圖書室：睡覺', U(37.35, 7, F2 + 2.4), '17', { k: 0.0, color: 'rgba(40,70,160,0.92)' })] },
+    { walk: outOf(lib, 34.2, -1).concat([U(31.5, CV, F2), U(29.8, CV, F2), U(28.0, CV, F2), { p: U(26.6, 12.75, F2), cam: meetCam }, U(26.6, 11.7, F2), U(26.0, 10.9, F2)]), ff: 3.2, speed: 1.4 },
+    { stop: 0, vo: '18', face: U(21, 7, F2), labels: [fn('會議室：早餐・吹風機', U(21, 7, F2 + 2.4), '18', { k: 0.05 })] },
+    { walk: [U(26.6, 11.7, F2), { p: U(26.6, 12.75, F2), cam: corr2 }, U(26.0, 13.6, F2), U(24.9, 14.0, F2), { p: U(24.6, 14.75, F2), cam: prinCam }, U(24.6, 15.6, F2), U(23.9, 16.5, F2)], ff: 2.2, speed: 1.3 },
+    { stop: 0, vo: '19', face: U(19.5, 17.5, F2), pad: 0.6, labels: [fn('校長室：團本工作區', U(19.5, 18, F2 + 2.4), '19', { k: 0.05, color: 'rgba(176,64,40,0.93)' })] }] };
+
+  const B = { key: 'v2b', name: '必修2-國幼班', start: U(40, 56.9, F1), yaw0: -0.24, follow: { dist: 4.2, height: 2.3 }, cam0: follow(), labels: [], steps: [
+    { aerial: 2.2, face: U(40, 60, F1), keys: [{ t: 0, p: U(24, 24, 30), l: U(46, 58, 0), fov: 50 }, { t: 2.2, p: U(39.3, 52.6, 2.7), l: U(40.2, 59.5, 1.2), fov: 54 }] },
+    { walk: [{ p: U(40, 58.0, F1), cam: kCam }, U(40, 59.4, F1), U(41.2, 60.6, F1)], speed: 1.1, vo: '20', voAt: 0.1,
+      labels: [fn('國幼班：睡覺', U(45, 62, F1 + 2.4), '20', { k: 0.2, color: 'rgba(40,70,160,0.92)', off: 'scene' })] },
+    { stop: 1.0, face: U(36, 62, F1) },
+    { aerial: 0, vo: '21', voAt: 0.2, face: U(36, 62, F1), keys: [{ t: 0, p: U(73, 49.5, 4.6), l: U(84.5, 58, 1.8), fov: 54 }, { t: 'end', p: U(75, 49.6, 4.4), l: U(85, 58, 1.8), fov: 54 }],
+      labels: [fn('遊樂器材區：小朋友不能過去', U(83.5, 58.5, 4.8), '21', { k: 0.1, color: 'rgba(176,64,40,0.95)', fs: 32 })] }] };
+
+  RB.V2 = [A, B].map(sc => RB.compile(sc));
+};
 /* ================= 9. 場景 ================= */
 RB.buildScene = async st => {
   const sc = new THREE.Scene(); RB.scene = sc;
@@ -973,13 +1063,13 @@ async function exportScenes(list, opt, msg) {
   try { if (!(await VideoEncoder.isConfigSupported({ codec, width: W, height: H, bitrate: 14e6, framerate: fps, hardwareAcceleration: hwPref })).supported) { hwPref = 'no-preference'; if (!(await VideoEncoder.isConfigSupported({ codec, width: W, height: H, bitrate: 14e6, framerate: fps })).supported) codec = 'avc1.4d0028'; } } catch (e) { hwPref = 'no-preference'; codec = 'avc1.4d0028'; }
   exporting = true; playing = false; updPlay(); renderer.setPixelRatio(1); renderer.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix();
   const comp = new OffscreenCanvas(W, H), cg = comp.getContext('2d'); const files = [];
-  try { for (const i of list) { const sc = RB.SCENES[i], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' }); let err = null;
+  try { for (const i of list) { const sc = (opt.scenes || RB.SCENES)[i], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' }); let err = null;
       const enc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => err = e }); enc.configure({ codec, width: W, height: H, bitrate: fps > 30 ? 20e6 : 14e6, framerate: fps, hardwareAcceleration: hwPref });
       RB.resetScene(sc); const N = Math.round(sc.dur * fps) + 1;
-      for (let f = 0; f < N; f++) { if (f > 0) RB.step(1 / fps); RB.applyCamera(cam); RB.renderFrame(); cg.drawImage(canvas, 0, 0, W, H); RB.drawOverlay(cg, W, H, cam, { labels: opt.labels, fade: true });
+      for (let f = 0; f < N; f++) { if (f > 0) RB.step(1 / fps); RB.applyCamera(cam); RB.renderFrame(); cg.drawImage(canvas, 0, 0, W, H); RB.drawOverlay(cg, W, H, cam, Object.assign({ labels: opt.labels, fade: true }, opt.ov || {}));
         const fr = new VideoFrame(comp, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) }); enc.encode(fr, { keyFrame: f % (fps * 2) === 0 }); fr.close(); if (err) throw err;
         while (enc.encodeQueueSize > 4) await yieldNow(); if (f % 15 === 0) { msg(sc.name + '：' + Math.round(f / N * 100) + '%（' + (list.indexOf(i) + 1) + '/' + list.length + '）'); RB.expProgress = { scene: i, f, N }; await yieldNow(); } }
-      await enc.flush(); mux.finalize(); const name = '瑞北導覽_' + String(i).padStart(2, '0') + '_' + sc.name + (opt.labels ? '' : '_無字幕') + '.mp4';
+      await enc.flush(); mux.finalize(); const name = opt.scenes ? sc.key + '.mp4' : '瑞北導覽_' + String(i).padStart(2, '0') + '_' + sc.name + (opt.labels ? '' : '_無字幕') + '.mp4';
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })); a.download = name; document.body.appendChild(a); a.click(); files.push(name); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
     msg('完成，已下載 ' + files.length + ' 個影片。'); }
   catch (e) { msg('匯出失敗：' + e.message); console.error(e); }
@@ -997,7 +1087,7 @@ RB.exportScenes = exportScenes;
     st('描出房屋輪廓', 0.62); await RB.loadBuildings(st);
     await RB.buildScene(st);
     st('載入走路的小人', 0.96); RB.scene.add(await RB.loadCharacter());
-    RB.makeTour(); RB.addShopSign('林上商號', RB.SHOP); RB.addShopSign('東輪機車行', RB.shopFront([-97, 21], [-74, 21]));
+    RB.makeTour(); if (RB.makeV2) RB.makeV2(); RB.addShopSign('林上商號', RB.SHOP); RB.addShopSign('東輪機車行', RB.shopFront([-97, 21], [-74, 21]));
     const pre = $('presets'), sel = $('expScene');
     RB.SCENES.forEach((s, i) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = s.name; b.onclick = () => { playAll = false; setScene(i, true); }; pre.appendChild(b);
       const o = document.createElement('option'); o.value = i; o.textContent = s.name + '（' + fmt(s.dur) + '）'; sel.appendChild(o); });

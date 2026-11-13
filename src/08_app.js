@@ -72,13 +72,13 @@ async function exportScenes(list, opt, msg) {
   try { if (!(await VideoEncoder.isConfigSupported({ codec, width: W, height: H, bitrate: 14e6, framerate: fps, hardwareAcceleration: hwPref })).supported) { hwPref = 'no-preference'; if (!(await VideoEncoder.isConfigSupported({ codec, width: W, height: H, bitrate: 14e6, framerate: fps })).supported) codec = 'avc1.4d0028'; } } catch (e) { hwPref = 'no-preference'; codec = 'avc1.4d0028'; }
   exporting = true; playing = false; updPlay(); renderer.setPixelRatio(1); renderer.setSize(W, H, false); cam.aspect = W / H; cam.updateProjectionMatrix();
   const comp = new OffscreenCanvas(W, H), cg = comp.getContext('2d'); const files = [];
-  try { for (const i of list) { const sc = RB.SCENES[i], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' }); let err = null;
+  try { for (const i of list) { const sc = (opt.scenes || RB.SCENES)[i], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' }); let err = null;
       const enc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => err = e }); enc.configure({ codec, width: W, height: H, bitrate: fps > 30 ? 20e6 : 14e6, framerate: fps, hardwareAcceleration: hwPref });
       RB.resetScene(sc); const N = Math.round(sc.dur * fps) + 1;
-      for (let f = 0; f < N; f++) { if (f > 0) RB.step(1 / fps); RB.applyCamera(cam); RB.renderFrame(); cg.drawImage(canvas, 0, 0, W, H); RB.drawOverlay(cg, W, H, cam, { labels: opt.labels, fade: true });
+      for (let f = 0; f < N; f++) { if (f > 0) RB.step(1 / fps); RB.applyCamera(cam); RB.renderFrame(); cg.drawImage(canvas, 0, 0, W, H); RB.drawOverlay(cg, W, H, cam, Object.assign({ labels: opt.labels, fade: true }, opt.ov || {}));
         const fr = new VideoFrame(comp, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) }); enc.encode(fr, { keyFrame: f % (fps * 2) === 0 }); fr.close(); if (err) throw err;
         while (enc.encodeQueueSize > 4) await yieldNow(); if (f % 15 === 0) { msg(sc.name + '：' + Math.round(f / N * 100) + '%（' + (list.indexOf(i) + 1) + '/' + list.length + '）'); RB.expProgress = { scene: i, f, N }; await yieldNow(); } }
-      await enc.flush(); mux.finalize(); const name = '瑞北導覽_' + String(i).padStart(2, '0') + '_' + sc.name + (opt.labels ? '' : '_無字幕') + '.mp4';
+      await enc.flush(); mux.finalize(); const name = opt.scenes ? sc.key + '.mp4' : '瑞北導覽_' + String(i).padStart(2, '0') + '_' + sc.name + (opt.labels ? '' : '_無字幕') + '.mp4';
       const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })); a.download = name; document.body.appendChild(a); a.click(); files.push(name); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
     msg('完成，已下載 ' + files.length + ' 個影片。'); }
   catch (e) { msg('匯出失敗：' + e.message); console.error(e); }
@@ -96,7 +96,7 @@ RB.exportScenes = exportScenes;
     st('描出房屋輪廓', 0.62); await RB.loadBuildings(st);
     await RB.buildScene(st);
     st('載入走路的小人', 0.96); RB.scene.add(await RB.loadCharacter());
-    RB.makeTour(); RB.addShopSign('林上商號', RB.SHOP); RB.addShopSign('東輪機車行', RB.shopFront([-97, 21], [-74, 21]));
+    RB.makeTour(); if (RB.makeV2) RB.makeV2(); RB.addShopSign('林上商號', RB.SHOP); RB.addShopSign('東輪機車行', RB.shopFront([-97, 21], [-74, 21]));
     const pre = $('presets'), sel = $('expScene');
     RB.SCENES.forEach((s, i) => { const b = document.createElement('button'); b.className = 'chip'; b.textContent = s.name; b.onclick = () => { playAll = false; setScene(i, true); }; pre.appendChild(b);
       const o = document.createElement('option'); o.value = i; o.textContent = s.name + '（' + fmt(s.dur) + '）'; sel.appendChild(o); });

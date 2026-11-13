@@ -26,12 +26,17 @@ function tauAt(seg, s) { const { v, ta, L, T } = seg, sa = v * ta / 2; if (s <= 
 RB.compile = sc => {
   const segs = [], labels = (sc.labels || []).slice(), caps = (sc.caps || []).slice(); let t = 0, pos = sc.start.slice(), D = 0, lastCam = sc.cam0 || { mode: 'follow' }, resume = false;
   const addCap = (c, a, b) => caps.push({ title: c.title || '', text: c.text || '', in: a, out: b });
+  // 配音對時：step.vo（句子編號或陣列）→ 句子開始時間記在 sc.vo；停留／空拍的長度依句子長度自動算
+  const VOD = id => (RB.VO && RB.VO[id]) || 2, GAP = sc.voGap || 0.22, vo = [], A = {}, pend = []; let voEnd = -9;
+  const say = (ids, tmin) => { for (const id of [].concat(ids || [])) { const a = Math.max(tmin, voEnd + GAP); vo.push({ id, t: a, d: VOD(id) }); A[id] = a; voEnd = a + VOD(id); tmin = a; } };
+  const tref = (r, base, end) => (r === 'end' ? end : typeof r === 'number' ? base + r : (A[r.at] + (r.k || 0) * VOD(r.at) + (r.off || 0)));
   for (const st of sc.steps) {
+    const t0s = t; if (st.labels) pend.push([st, t0s]);
     if (st.walk) {
       const pts = [pos], ms = [];
       for (const w of st.walk) { if (Array.isArray(w)) pts.push(w); else { pts.push(w.p); ms.push(Object.assign({ i: pts.length - 1 }, w)); } }
       const curve = new THREE.CatmullRomCurve3(pts.map(V3), false, 'centripetal', 0.5), div = Math.max(240, pts.length * 80), lens = curve.getLengths(div), L = lens[div];
-      const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta;
+      const ff = st.ff || 1, v = st.speed || 1.35, ta = Math.min(0.75, L / v * 0.5), T = L / v + ta; say(st.vo, t + (st.voAt === undefined ? 0.15 : st.voAt));
       const seg = { type: 'walk', t0: t, t1: t + T / ff, ff, curve, L, v, ta, T, D0: D, camIn: st.cam || (resume ? Object.assign({}, lastCam, { cut: false }) : lastCam), marks: [] }; resume = false;
       for (const m of ms) { const s = lens[Math.round(m.i / (pts.length - 1) * div)], tv = t + tauAt(seg, s) / ff;
         if (m.cam) seg.marks.push({ s, cam: m.cam });
@@ -41,17 +46,21 @@ RB.compile = sc => {
       segs.push(seg); t = seg.t1; D += L; pos = pts[pts.length - 1].slice();
     } else if (st.stop !== undefined) {
       // 停下來但沒指定鏡頭時，鏡頭留在原地看著人（不要跟著轉身繞到前面）
-      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow';
-      const seg = { type: 'stop', t0: t, t1: t + st.stop, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
+      const auto = !st.cam && (lastCam.mode || 'follow') === 'follow'; say(st.vo, t + (st.voAt === undefined ? 0.2 : st.voAt));
+      const sd = Math.max(st.stop || 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.3 : st.pad) : 0);
+      const seg = { type: 'stop', t0: t, t1: t + sd, ff: 1, pos: pos.slice(), face: st.face, cam: st.cam || (auto ? { mode: 'hold', lookH: 1.3 } : lastCam), D0: D }; if (!auto) lastCam = seg.cam; else resume = true;
       if (st.label) labels.push({ text: st.label.text, pos: st.label.pos, hot: st.label.hot, small: st.label.small, in: t + 0.15, out: seg.t1 + (st.ldur || 0) });
       if (st.caption) addCap(st.caption, t + 0.2, seg.t1 + (st.cdur || 0));
       segs.push(seg); t = seg.t1;
-    } else if (st.aerial) {
-      const seg = { type: 'aerial', t0: t, t1: t + st.aerial, ff: 1, pos: pos.slice(), face: st.face, cam: { mode: 'aerial', keys: st.keys, blend: st.blend || 0, cut: !st.blend }, D0: D }; lastCam = st.after || { mode: 'follow' };
+    } else if (st.aerial !== undefined) {
+      say(st.vo, t + (st.voAt === undefined ? 0.3 : st.voAt)); const ad = Math.max(typeof st.aerial === 'number' ? st.aerial : 0, st.vo ? voEnd - t + (st.pad === undefined ? 0.4 : st.pad) : 0);
+      const keys = st.keys.map(k => Object.assign({}, k, { t: tref(k.t, 0, ad) - (typeof k.t === 'object' ? t : 0) }));
+      const seg = { type: 'aerial', t0: t, t1: t + ad, ff: 1, pos: pos.slice(), face: st.face, cam: { mode: 'aerial', keys, blend: st.blend || 0, cut: !st.blend }, D0: D }; lastCam = st.after || { mode: 'follow' };
       segs.push(seg); t = seg.t1;
     }
   }
-  sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; return sc;
+  for (const [st, t0s] of pend) { const seg = segs.find(g => g.t0 >= t0s - 1e-9) || segs[segs.length - 1]; for (const L of st.labels) { const a = L.on ? A[L.on] + (L.k || 0) * VOD(L.on) : t0s + (L.at || 0), b = L.off === undefined ? seg.t1 : L.off === 'scene' ? t : typeof L.off === 'number' ? a + L.off : A[L.off.at || L.off] + (L.off.k === undefined ? 1 : L.off.k) * VOD(L.off.at || L.off); labels.push(Object.assign({}, L, { in: a, out: b })); } }
+  sc.segs = segs; sc.dur = t; sc.allLabels = labels; sc.allCaps = caps; sc.vo = vo; return sc;
 };
 const angLerp = (a, b, k) => { let d = b - a; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return a + d * k; };
 const yawTo = (from, to) => Math.atan2(to[0] - from[0], to[2] - from[2]);
@@ -103,16 +112,19 @@ const win = (t, a, b, f) => Math.max(0, Math.min(1, (t - a) / f, (b - t) / f));
 const _v = new THREE.Vector3();
 function drawLabel(g, L, a, W, H, cam, S) {
   _v.set(L.pos[0], L.pos[1], L.pos[2]).project(cam); if (_v.z > 1 || _v.z < -1) return; const sx = (_v.x * 0.5 + 0.5) * W, sy = (-_v.y * 0.5 + 0.5) * H; if (sx < -100 || sx > W + 100 || sy < -100 || sy > H + 100) return;
-  const fs = Math.round((L.small ? 26 : 32) * S), pad = fs * 0.45, bh = fs * 1.5; g.font = '700 ' + fs + 'px ' + RB.FONT; const tw = g.measureText(L.text).width, ty = sy - (L.lift !== undefined ? L.lift * H : 64 * S);
-  g.globalAlpha = a; g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = Math.max(2, 3 * S); g.beginPath(); g.moveTo(sx, sy); g.lineTo(sx, ty + bh / 2); g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6 * S, 0, Math.PI * 2); g.fill();
-  g.fillStyle = L.hot ? 'rgba(176,64,40,0.93)' : 'rgba(20,28,36,0.84)'; g.beginPath(); g.roundRect(sx - tw / 2 - pad, ty - bh / 2, tw + pad * 2, bh, bh * 0.3); g.fill(); g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(L.text, sx, ty + fs * 0.05); g.globalAlpha = 1;
+  const fs = Math.round((L.fs || (L.small ? 26 : 32)) * S), pad = fs * 0.45, bh = fs * 1.5; g.font = '700 ' + fs + 'px ' + RB.FONT; const tw = g.measureText(L.text).width, off = L.dx !== undefined || L.dy !== undefined;
+  const bx = off ? sx + (L.dx || 0) * S : sx, ty = off ? sy + (L.dy || 0) * S : sy - (L.lift !== undefined ? L.lift * H : 64 * S);
+  g.globalAlpha = a; g.strokeStyle = 'rgba(255,255,255,0.95)'; g.lineWidth = Math.max(2, 3 * S); g.beginPath(); g.moveTo(sx, sy);
+  if (off) g.lineTo(bx + (Math.abs(L.dx || 0) > Math.abs(L.dy || 0) ? -Math.sign(L.dx) * (tw / 2 + pad) : 0), ty + (Math.abs(L.dx || 0) > Math.abs(L.dy || 0) ? 0 : -Math.sign(L.dy || 1) * bh / 2)); else g.lineTo(sx, ty + bh / 2);
+  g.stroke(); g.fillStyle = '#fff'; g.beginPath(); g.arc(sx, sy, 6 * S, 0, Math.PI * 2); g.fill();
+  g.fillStyle = L.color || (L.hot ? 'rgba(176,64,40,0.93)' : 'rgba(20,28,36,0.84)'); g.beginPath(); g.roundRect(bx - tw / 2 - pad, ty - bh / 2, tw + pad * 2, bh, bh * 0.3); g.fill(); if (L.edge) { g.strokeStyle = L.edge; g.lineWidth = Math.max(2, 2.5 * S); g.stroke(); } g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(L.text, bx, ty + fs * 0.05); g.globalAlpha = 1;
 }
 RB.drawOverlay = (g, W, H, cam, opt) => {
   const P = RB.player, sc = P.sc, st = P.t, S = Math.max(Math.min(W / 1920, H / 1080) * (opt.scale || 1), opt.minS || 0), show = opt.labels !== false, top = opt.top || 0; g.save();
   if (show) for (const L of sc.allLabels) { const a = win(st, L.in, L.out, 0.5); if (a > 0.01) drawLabel(g, L, a, W, H, cam, S); }
   // 說明字幕（同一時間只顯示最新的一則）
   let cap = null; for (const c of sc.allCaps) if (st >= c.in - 0.4 && st < c.out + 0.4 && (!cap || c.in > cap.in)) cap = c;
-  if (show && cap) { const a = win(st, cap.in - 0.4, cap.out + 0.4, 0.4); if (a > 0.01) { const fsT = Math.round(36 * S), fs = Math.round(31 * S), maxW = Math.min(W - 60 * S, 1360 * S); g.font = '500 ' + fs + 'px ' + RB.FONT; const lines = cap.text ? wrapText(g, cap.text, maxW - 70 * S) : [];
+  if (show && cap && opt.caps !== false) { const a = win(st, cap.in - 0.4, cap.out + 0.4, 0.4); if (a > 0.01) { const fsT = Math.round(36 * S), fs = Math.round(31 * S), maxW = Math.min(W - 60 * S, 1360 * S); g.font = '500 ' + fs + 'px ' + RB.FONT; const lines = cap.text ? wrapText(g, cap.text, maxW - 70 * S) : [];
       g.font = '700 ' + fsT + 'px ' + RB.FONT; const tW = g.measureText(cap.title).width; g.font = '500 ' + fs + 'px ' + RB.FONT;
       const bw = Math.min(maxW, Math.max(tW, ...lines.map(l => g.measureText(l).width), 260 * S) + 70 * S), bh = fsT * 1.45 + lines.length * fs * 1.5 + 34 * S, x = W / 2 - bw / 2, y = H - bh - (opt.bottom !== undefined ? opt.bottom : 44 * S);
       g.globalAlpha = a; g.fillStyle = 'rgba(14,20,26,0.86)'; g.beginPath(); g.roundRect(x, y, bw, bh, 16 * S); g.fill(); g.fillStyle = '#e0a640'; g.fillRect(x, y + 16 * S, 6 * S, bh - 32 * S);
@@ -120,7 +132,7 @@ RB.drawOverlay = (g, W, H, cam, opt) => {
   // 場景標題
   if (show && sc.title) { const a = win(st, 0.3, 4.2, 0.7); if (a > 0.01) { g.globalAlpha = a; g.shadowColor = 'rgba(0,0,0,0.6)'; g.shadowBlur = 16 * S; g.fillStyle = '#fff'; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.font = '700 ' + Math.round(64 * S) + 'px ' + RB.FONT; g.fillText(sc.title, 72 * S, top + 128 * S); if (sc.sub) { g.font = '500 ' + Math.round(34 * S) + 'px ' + RB.FONT; g.fillText(sc.sub, 74 * S, top + 180 * S); } g.shadowBlur = 0; g.globalAlpha = 1; } }
   // 快轉標示
-  const fs_ = P.ev && P.ev.seg; if (show && fs_ && fs_.ff > 1) { const a = win(st, fs_.t0, fs_.t1, 0.3); g.globalAlpha = a; g.font = '700 ' + Math.round(30 * S) + 'px ' + RB.FONT; g.fillStyle = 'rgba(14,20,26,0.78)'; g.beginPath(); g.roundRect(W - 200 * S, top + 40 * S, 156 * S, 54 * S, 12 * S); g.fill(); g.fillStyle = '#ffcf70'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('▶▶ ' + fs_.ff + '×', W - 122 * S, top + 67 * S); g.globalAlpha = 1; }
+  const fs_ = P.ev && P.ev.seg; if (show && !opt.noFF && fs_ && fs_.ff > 1) { const a = win(st, fs_.t0, fs_.t1, 0.3); g.globalAlpha = a; g.font = '700 ' + Math.round(30 * S) + 'px ' + RB.FONT; g.fillStyle = 'rgba(14,20,26,0.78)'; g.beginPath(); g.roundRect(W - 200 * S, top + 40 * S, 156 * S, 54 * S, 12 * S); g.fill(); g.fillStyle = '#ffcf70'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('▶▶ ' + fs_.ff + '×', W - 122 * S, top + 67 * S); g.globalAlpha = 1; }
   // 頭尾淡入淡出
   if (opt.fade !== false) { const f = Math.max(0, 1 - st / 0.6, 1 - (sc.dur - st) / 0.6); if (f > 0) { g.fillStyle = 'rgba(0,0,0,' + Math.min(1, f) + ')'; g.fillRect(0, 0, W, H); } }
   g.restore();

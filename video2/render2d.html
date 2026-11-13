@@ -1,0 +1,145 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>render2d</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
+<body><canvas id="c" width="1920" height="1080"></canvas>
+<script>
+const W = 1920, H = 1080, cv = document.getElementById('c'), g = cv.getContext('2d');
+const F = '"Noto Sans CJK TC","Noto Sans CJK HK",sans-serif';
+const T = window.TL;            // 各段時間軸（由 driver 注入）
+const IM = {};
+const load = (k, src) => new Promise(r => { const i = new Image(); i.onload = () => { IM[k] = i; r(); }; i.onerror = () => { console.log('ERR ' + src); r(); }; i.src = src; });
+window.loadAll = async (A, B) => {
+  const L = [load('gate', 'assets/gate_pano.jpg'), load('dm', 'assets/dorm_m.jpg'), load('df', 'assets/dorm_f.jpg'), load('map', 'assets/map_crop.png')];
+  for (const k of ['common', 'up', 'right', 'eight']) L.push(load('r_' + k, 'assets/route_' + k + '.png'));
+  for (let i = 0; i < A; i++) L.push(load('A' + i, 'route/A2/' + String(i).padStart(4, '0') + '.jpg'));
+  for (let i = 0; i < B; i++) L.push(load('B' + i, 'route/B2/' + String(i).padStart(4, '0') + '.jpg'));
+  await Promise.all(L); await document.fonts.load('900 60px "Noto Sans CJK TC"'); await document.fonts.load('400 30px "Noto Sans CJK TC"'); return Object.keys(IM).length;
+};
+// ---------- 共用 ----------
+const cl = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const ease = x => { x = cl(x); return x * x * (3 - 2 * x); };
+const ap = (t, t0, d = 0.35) => ease((t - t0) / d);            // 出現
+const rnd = (s => () => (s = (s * 16807) % 2147483647) / 2147483647)(7);
+const BOK = Array.from({ length: 46 }, () => ({ x: rnd() * W, y: rnd() * H, r: 18 + rnd() * 80, c: ['74,140,255', '43,190,170', '130,95,255', '80,170,255', '60,110,220'][Math.floor(rnd() * 5)], a: 0.10 + rnd() * 0.22, p: rnd() * 6.28, s: 0.15 + rnd() * 0.3 }));
+function bg(t) {
+  const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, '#0a1233'); gr.addColorStop(0.55, '#141a4a'); gr.addColorStop(1, '#25164a'); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+  for (const b of BOK) { const x = b.x + Math.sin(t * b.s + b.p) * 24, y = b.y + Math.cos(t * b.s * 0.8 + b.p) * 16; const rg = g.createRadialGradient(x, y, 0, x, y, b.r); rg.addColorStop(0, 'rgba(' + b.c + ',' + b.a + ')'); rg.addColorStop(0.75, 'rgba(' + b.c + ',' + (b.a * 0.8) + ')'); rg.addColorStop(1, 'rgba(' + b.c + ',0)'); g.fillStyle = rg; g.beginPath(); g.arc(x, y, b.r, 0, 7); g.fill(); }
+}
+function rr(x, y, w, h, r) { g.beginPath(); g.roundRect(x, y, w, h, r); }
+function card(x, y, w, h, col, a = 1, glow = 1, fill = 0.07) {
+  g.save(); g.globalAlpha = a; rr(x, y, w, h, 22); g.fillStyle = 'rgba(255,255,255,' + fill + ')'; g.fill();
+  g.shadowColor = col; g.shadowBlur = 26 * glow; g.strokeStyle = col; g.lineWidth = 3; g.stroke(); g.shadowBlur = 10 * glow; g.stroke(); g.restore();
+}
+function txt(s, x, y, size, o = {}) {
+  g.save(); g.globalAlpha = o.a === undefined ? 1 : o.a; g.font = (o.w || 900) + ' ' + size + 'px ' + F; g.textAlign = o.align || 'center'; g.textBaseline = 'middle';
+  if (o.glow !== false) { g.shadowColor = o.gc || 'rgba(160,200,255,0.9)'; g.shadowBlur = o.gb || 22; }
+  g.fillStyle = o.c || '#fff'; g.fillText(s, x, y); if (o.glow !== false) { g.shadowBlur = 0; g.fillText(s, x, y); } g.restore();
+}
+function chip(s, x, y, col, size = 34, a = 1, align = 'left') {
+  g.save(); g.font = '900 ' + size + 'px ' + F; const w = g.measureText(s).width + size * 1.1, h = size * 1.55; const x0 = align === 'center' ? x - w / 2 : x;
+  g.globalAlpha = a; rr(x0, y - h / 2, w, h, h / 2); g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 18; g.fill(); g.shadowBlur = 0;
+  g.fillStyle = '#fff'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(s, x0 + w / 2, y + 1); g.restore(); return w;
+}
+function numCircle(n, x, y, col, a = 1, r = 26) { g.save(); g.globalAlpha = a; g.beginPath(); g.arc(x, y, r, 0, 7); g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 16; g.fill(); g.shadowBlur = 0; g.fillStyle = '#fff'; g.font = '900 ' + Math.round(r * 1.2) + 'px ' + F; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, x, y + 1); g.restore(); }
+function img(k, x, y, w, h, a = 1) { if (!IM[k]) return; g.save(); g.globalAlpha = a; g.drawImage(IM[k], x, y, w, h); g.restore(); }
+function fadeEdges(t, dur, fin = 0.3, fout = 0.3) { const f = Math.max(fin ? 1 - t / fin : 0, fout ? 1 - (dur - t) / fout : 0); if (f > 0) { g.fillStyle = 'rgba(0,0,0,' + cl(f) + ')'; g.fillRect(0, 0, W, H); } }
+
+// ---------- 1 校門照片 ----------
+function P1(t) { const L = T.P1, d = L.dur;
+  g.save(); g.filter = 'blur(28px) brightness(0.45)'; img('gate', -80, -80, W + 160, H + 160); g.restore();
+  const s = 1 + 0.05 * (t / d), w = 1800, h = w * 720 / 1920, x0 = (W - w) / 2, y0 = 455 - h / 2;
+  g.save(); rr(x0, y0, w, h, 24); g.clip(); const sw = w * s, sh = h * s; g.drawImage(IM.gate, x0 - (sw - w) * 0.62, y0 - (sh - h) * 0.5, sw, sh); g.restore();
+  card(x0, y0, w, h, 'rgba(140,190,255,0.9)', 1, 0.8, 0);
+  const a = ap(t, L.vo['01'] + 0.1, 0.4); g.save(); g.globalAlpha = a; rr(x0 + 40, y0 + h - 150, 560, 110, 20); g.fillStyle = 'rgba(10,16,40,0.78)'; g.fill(); g.restore();
+  txt('瑞北國小・正門口', x0 + 320, y0 + h - 95, 54, { a });
+  fadeEdges(t, d, 0.35, 0);
+}
+// ---------- 4 往雜貨店（街景） ----------
+const ROAD = ['過台9線', '男教師宿舍', '女教師宿舍', '過火車橋', '雜貨店（林上商號）'];
+function P2(t) { const L = T.P2, d = L.dur, on = L.items; bg(t);
+  const px = 300, py = 45, pw = 580, ph = 840;
+  const frameAt = tt => tt < L.a1 ? 'A' + Math.min(107, Math.floor(tt * 30)) : tt < L.m1 ? 'dm' : tt < L.f1 ? 'df' : 'B' + Math.min(155, Math.floor((tt - L.f1) * 30));
+  const k = frameAt(t); let prevK = null, mix = 1; for (const b of [L.a1, L.m1, L.f1]) if (t >= b && t < b + 0.25) { prevK = frameAt(b - 0.001); mix = (t - b) / 0.25; }
+  g.save(); rr(px, py, pw, ph, 22); g.clip(); if (prevK) img(prevK, px, py, pw, ph); img(k, px, py, pw, ph, mix); g.restore();
+  card(px, py, pw, ph, 'rgba(140,190,255,0.95)', 1, 0.9, 0);
+  const cap = t < L.a1 ? '影像：Google 街景（De Xing Ong）' : '影像：Google 街景'; g.save(); g.font = '500 22px ' + F; const cw = g.measureText(cap).width + 24; rr(px + 14, py + ph - 46, cw, 34, 10); g.fillStyle = 'rgba(0,0,0,0.6)'; g.fill(); g.fillStyle = '#fff'; g.textBaseline = 'middle'; g.fillText(cap, px + 26, py + ph - 28); g.restore();
+  if (t >= L.a1 && t < L.f1) { const nm = t < L.m1 ? '男教師宿舍' : '女教師宿舍'; chip(nm, px + pw / 2, py + 62, 'rgba(120,80,230,0.95)', 40, ap(t, t < L.m1 ? L.a1 : L.m1, 0.3), 'center'); }
+  if (t >= on[4]) chip('林上商號', px + pw / 2, py + 62, 'rgba(210,90,50,0.95)', 40, ap(t, on[4], 0.3), 'center');
+  // 右邊：路線步驟
+  const x0 = 1000, w = 760; txt('從學校走到雜貨店', x0 + w / 2, 110, 54, { a: ap(t, 0.1) });
+  ROAD.forEach((s, i) => { const y = 215 + i * 132, act = t >= on[i] && (i === 4 || t < on[i + 1]), done = i < 4 && t >= on[i + 1], a0 = t >= on[i] ? 1 : 0.32;
+    const col = ['rgba(90,160,255,0.95)', 'rgba(150,110,255,0.95)', 'rgba(200,110,255,0.95)', 'rgba(60,200,190,0.95)', 'rgba(255,140,70,0.95)'][i];
+    card(x0, y, w, 108, act ? col : 'rgba(255,255,255,0.25)', a0, act ? 1.2 : 0.2, act ? 0.12 : 0.04);
+    numCircle(done ? '✓' : String(i + 1), x0 + 62, y + 54, done ? 'rgba(70,170,110,0.95)' : col, a0);
+    txt(s, x0 + 112, y + 54, i === 4 ? 44 : 48, { align: 'left', a: a0, glow: act });
+    if (i === 4 && t >= on[4]) txt('Google 地圖上的名字', x0 + w - 30, y + 84, 22, { align: 'right', w: 500, a: ap(t, on[4] + 0.6), glow: false, c: '#ffd29a' }); });
+}
+// ---------- 5 快速複習 ----------
+function P3(t) { const L = T.P3, V = L.vo; bg(t);
+  txt('快速複習', W / 2, 105, 66, { a: ap(t, V['25']), gc: 'rgba(255,220,140,0.9)' });
+  const rows = [
+    { id: '26', y: 190, col: 'rgba(90,160,255,0.95)', parts: [['上課', '一、二、三年級教室', 0], ['哥姐休息', '四年級教室', 0.55]] },
+    { id: '27', y: 365, col: 'rgba(130,110,255,0.95)', parts: [['睡覺', '圖書室・五六年級教室・國幼班', 0]] },
+    { id: '28', y: 540, col: 'rgba(60,200,190,0.95)', parts: [['行李', '英語教室', 0], ['早餐', '會議室', 0.36], ['吃飯・檢討', '禮堂', 0.66]] },
+    { id: '29', y: 715, col: 'rgba(255,140,70,0.95)', parts: [['洗澡', '校長室・男教師宿舍・女教師宿舍', 0]] }];
+  rows.forEach((R, ri) => { const t0 = V[R.id], d = L.d[R.id]; if (t < t0 - 0.05) return; const act = t < (ri < 3 ? V[rows[ri + 1].id] : 1e9), a = ap(t, t0);
+    card(150, R.y, 1620, 150, act ? R.col : 'rgba(255,255,255,0.3)', a, act ? 1.1 : 0.25, act ? 0.11 : 0.05);
+    const n = R.parts.length, cw = 1620 / n;
+    R.parts.forEach(([lab, val, k], j) => { const aa = a * ap(t, t0 + k * d, 0.3), x = 150 + j * cw + 34;
+      const w = chip(lab, x, R.y + 75, R.col.replace('0.95', act ? '0.95' : '0.55'), 34, aa);
+      txt(val, x + w + 22, R.y + 75, n === 1 ? 50 : n === 2 ? 44 : 42, { align: 'left', a: aa, glow: act }); }); });
+}
+// ---------- 6 早上接小朋友 ----------
+function P4(t) { const L = T.P4, V = L.vo, D = L.d; bg(t);
+  txt('早上接小朋友', W / 2, 95, 62, { a: ap(t, 0.1), gc: 'rgba(255,220,140,0.9)' });
+  // 雜貨店卡片＋小朋友集合
+  const a0 = ap(t, V['30']); card(660, 160, 600, 150, 'rgba(255,140,70,0.95)', a0, t < V['31'] ? 1.2 : 0.4);
+  txt('雜貨店（林上商號）', 960, 210, 46, { a: a0 }); txt('小朋友先到這裡集合', 960, 270, 30, { a: a0, w: 500, glow: false, c: '#ffd9b0' });
+  for (let i = 0; i < 9; i++) { const p = ease((t - V['30'] - 0.3 - i * 0.12) / 0.8), x0 = i % 2 ? 1500 : 420, x = x0 + (i % 2 ? -1 : 1) * (170 + (i % 5) * 18) * p, y = 190 + (i % 3) * 45; if (p <= 0) continue; g.save(); g.globalAlpha = a0 * 0.9; g.beginPath(); g.arc(x, y, 14, 0, 7); g.fillStyle = ['#ffd166', '#06d6a0', '#ef476f', '#4cc9f0'][i % 4]; g.fill(); g.restore(); }
+  const lane = (y, label, col, steps, t0, d, act) => { const a = ap(t, t0); if (a <= 0) return; card(120, y, 1680, 190, act ? col : 'rgba(255,255,255,0.3)', a, act ? 1.1 : 0.25, act ? 0.11 : 0.05);
+    chip(label, 160, y + 95, col, 36, a); let x = 560;
+    steps.forEach(([s, k], i) => { const aa = a * ap(t, t0 + k * d, 0.3); if (i) { g.save(); g.globalAlpha = aa; g.strokeStyle = 'rgba(255,255,255,0.85)'; g.lineWidth = 5; g.beginPath(); g.moveTo(x - 64, y + 95); g.lineTo(x - 26, y + 95); g.stroke(); g.beginPath(); g.moveTo(x - 38, y + 82); g.lineTo(x - 24, y + 95); g.lineTo(x - 38, y + 108); g.stroke(); g.restore(); }
+      g.save(); g.font = '900 40px ' + F; const w = g.measureText(s).width; g.restore(); txt(s, x, y + 95, 40, { align: 'left', a: aa, glow: act }); x += w + 96; }); };
+  lane(380, '接小朋友的哥姐', 'rgba(90,160,255,0.95)', [['07:10 起床', 0.22], ['07:40 出發', 0.48], ['帶小朋友回學校', 0.75]], V['31'], D['31'], t < V['32']);
+  lane(640, '其他哥姐', 'rgba(60,200,190,0.95)', [['會議室吃早餐', 0.12], ['08:10 禮堂集合', 0.55]], V['32'], D['32'], true);
+}
+// ---------- 7 回家路線 ----------
+const MAPW = 1458, MAPH = 1418, MS = 860 / MAPH, MX = 60, MY = 40; const mp = (x, y) => [MX + x * MS, MY + y * MS];
+function ring(x, y, t, col, a = 1) { for (let k = 0; k < 2; k++) { const p = ((t * 0.9 + k * 0.5) % 1); g.save(); g.globalAlpha = a * (1 - p); g.strokeStyle = col; g.lineWidth = 5; g.beginPath(); g.arc(x, y, 14 + p * 46, 0, 7); g.stroke(); g.restore(); } g.save(); g.globalAlpha = a; g.beginPath(); g.arc(x, y, 10, 0, 7); g.fillStyle = col; g.fill(); g.restore(); }
+function P5(t) { const L = T.P5, V = L.vo, D = L.d; bg(t);
+  const sw = V['35'] - 0.15, m = ap(t, sw, 0.5);
+  if (t < sw + 0.5) { const a1 = 1 - m;
+    txt('送小朋友回家', W / 2, 105, 62, { a: a1 * ap(t, 0.1), gc: 'rgba(255,220,140,0.9)' });
+    [['第一天', '11/21（六）', '16:30', 0], ['第二天', '11/22（日）', '11:55', 0.55]].forEach(([d, day, tm, k], i) => { const a = a1 * ap(t, V['33'] + k * D['33'], 0.35), x = 260 + i * 740;
+      card(x, 180, 660, 290, 'rgba(255,160,80,0.95)', a, 1, 0.09); txt(d + '　' + day, x + 330, 250, 40, { a, w: 700, glow: false, c: '#ffd9b0' }); txt(tm, x + 330, 370, 110, { a, gc: 'rgba(255,190,120,0.9)' }); });
+    const a2 = a1 * ap(t, V['34'], 0.3); txt('三條回家路線', W / 2, 560, 40, { a: a2, w: 700, glow: false, c: '#cfe0ff' });
+    [['向上', 'rgba(60,140,255,0.95)', 0.32], ['向右', 'rgba(240,70,50,0.95)', 0.42], ['八鄰', 'rgba(120,200,40,0.95)', 0.52]].forEach(([s, col, k], i) => { const a = a1 * ap(t, V['34'] + k * D['34'], 0.3); card(330 + i * 440, 620, 380, 200, col, a, 1.2, 0.1); txt(s, 520 + i * 440, 720, 92, { a, gc: col }); });
+  }
+  if (m <= 0) return;
+  g.save(); g.globalAlpha = m;
+  // 地圖（壓暗，但下方 Google 標示不壓暗）
+  g.drawImage(IM.map, MX, MY, MAPW * MS, MAPH * MS); g.fillStyle = 'rgba(6,8,20,0.55)'; g.fillRect(MX, MY, MAPW * MS, (MAPH - 40) * MS);
+  const R = [['common', V['35'], '大家一起走到雜貨店', 'rgba(255,255,255,0.95)'], ['up', V['36'], '向上：往北一小段，最短', 'rgba(60,140,255,0.95)'], ['right', V['37'], '向右：往右繞一大圈', 'rgba(240,70,50,0.95)'], ['eight', V['38'], '八鄰：彎進八鄰社區', 'rgba(120,200,40,0.95)']];
+  let cur = -1; R.forEach((r, i) => { if (t >= r[1] - 0.1) cur = i; }); if (t >= V['39'] - 0.1) cur = 4;
+  R.forEach((r, i) => { if (t < r[1] - 0.1) return; const act = i === cur, a = act ? 0.75 + 0.25 * Math.sin(t * 5) : (i === 0 ? 0.5 : 0.18); g.save(); g.globalAlpha = m * a * ap(t, r[1] - 0.1, 0.4); g.drawImage(IM['r_' + r[0]], MX, MY, MAPW * MS, MAPH * MS); g.restore(); });
+  card(MX, MY, MAPW * MS, MAPH * MS, 'rgba(140,190,255,0.9)', 1, 0.6, 0);
+  const shop = mp(338, 1047), school = mp(210, 1262), spur = mp(1150, 300);
+  if (cur >= 0) { ring(shop[0], shop[1], t, '#ffb347', cur <= 1 ? 1 : 0.5); chipAt('雜貨店', shop[0] + 34, shop[1] - 36, 'rgba(210,90,50,0.95)'); }
+  if (cur === 0 || cur === 4) { ring(school[0], school[1], t, '#ffffff'); chipAt(cur === 4 ? '留校' : '學校', school[0] + 30, school[1] + 6, cur === 4 ? 'rgba(110,110,130,0.95)' : 'rgba(30,40,70,0.9)'); }
+  if (cur === 3) { ring(spur[0], spur[1], t, '#b6ff5a'); chipAt('八鄰社區', spur[0] - 40, spur[1] - 60, 'rgba(90,160,30,0.95)'); }
+  // 右邊清單
+  const list = [['大家一起', '學校 → 雜貨店', 'rgba(255,255,255,0.9)'], ['向上', '藍色・最短', 'rgba(60,140,255,0.95)'], ['向右', '紅色・繞一大圈', 'rgba(240,70,50,0.95)'], ['八鄰', '綠色・彎進八鄰社區', 'rgba(120,200,40,0.95)'], ['留校', '沒排到路線的人', 'rgba(150,150,170,0.95)']];
+  list.forEach(([k, s, col], i) => { const y = 70 + i * 162, show = cur >= i || (i < 4 ? t >= R[i][1] - 0.1 : t >= V['39'] - 0.1), act = cur === i, a = show ? 1 : 0.3;
+    card(1000, y, 840, 136, act ? col : 'rgba(255,255,255,0.25)', a, act ? 1.2 : 0.2, act ? 0.13 : 0.04);
+    txt(k, 1118, y + 68, 50, { a, glow: act, gc: col }); txt(s, 1250, y + 68, 38, { align: 'left', a: a * 0.95, w: 700, glow: false, c: act ? '#fff' : '#b9c4e0' }); });
+  g.restore();
+}
+function chipAt(s, x, y, col) { chip(s, x, y, col, 30, 1); }
+// ---------- 結尾 ----------
+function P6(t) { const L = T.P6; bg(t); txt('以上就是瑞北的環境', W / 2, 400, 78, { a: ap(t, 0.2), gc: 'rgba(160,200,255,0.95)' }); txt('出隊見！', W / 2, 580, 110, { a: ap(t, 0.9), gc: 'rgba(255,210,120,0.95)' }); fadeEdges(t, L.dur, 0, 0.6); }
+// ---------- 章節標籤（輸出成透明 PNG，最後再疊到整支影片上） ----------
+window.pill = (n, s) => { g.clearRect(0, 0, W, H); g.font = '700 28px ' + F; const w = g.measureText(s).width + 92, h = 52, x = 28, y = 26; rr(x, y, w, h, h / 2); g.fillStyle = 'rgba(10,16,40,0.55)'; g.fill(); g.strokeStyle = 'rgba(200,220,255,0.75)'; g.lineWidth = 2.5; g.stroke();
+  g.beginPath(); g.arc(x + 30, y + h / 2, 15, 0, 7); g.strokeStyle = 'rgba(220,235,255,0.95)'; g.lineWidth = 2.5; g.stroke(); g.fillStyle = '#fff'; g.font = '700 20px ' + F; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(n, x + 30, y + h / 2 + 1);
+  g.font = '700 28px ' + F; g.textAlign = 'left'; g.fillText(s, x + 58, y + h / 2 + 1); return cv.toDataURL('image/png'); };
+window.frame = (seg, t, q) => { g.save(); g.clearRect(0, 0, W, H); ({ P1, P2, P3, P4, P5, P6 })[seg](t); g.restore(); return cv.toDataURL('image/jpeg', q || 0.92); };
+</script></body></html>
