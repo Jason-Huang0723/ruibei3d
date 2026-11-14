@@ -9,12 +9,13 @@ async function buildMap2() {
   const G = new THREE.Group(); G.rotation.y = PSI; scene.add(G);
   const loadTex = src => new Promise((res, rej) => new THREE.TextureLoader().load(src, t => { t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; res(t); }, undefined, rej));
   const [t16, t18, t20] = await Promise.all([loadTex('map/photo2_z16.jpg'), loadTex('map/z18_clean.jpg'), loadTex('map/z20_clean.jpg')]);
-  const plane = (B, tex, y, alpha) => { const w = (B.e1 - B.e0)/10, h = (B.n1 - B.n0)/10;
-    const m = new THREE.MeshStandardMaterial({map: tex, roughness: 1, color: 0xFFFFFF, emissive: 0xFFFFFF, emissiveMap: tex, emissiveIntensity: .3, transparent: !!alpha, alphaMap: alpha || null, depthWrite: !alpha});
-    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); p.rotation.x = -Math.PI/2; p.position.set((B.e0 + B.e1)/20, y, -(B.n0 + B.n1)/20); p.receiveShadow = true; G.add(p); return p; };
+  // 第七版：地面幾張圖只差 0.02 單位高，拉遠時深度精度不夠會互相打架（畫面邊緣一直閃深色）→ 都不寫深度、用 renderOrder 固定先後
+  const plane = (B, tex, y, alpha, ro) => { const w = (B.e1 - B.e0)/10, h = (B.n1 - B.n0)/10;
+    const m = new THREE.MeshStandardMaterial({map: tex, roughness: 1, color: 0xFFFFFF, emissive: 0xFFFFFF, emissiveMap: tex, emissiveIntensity: .3, transparent: !!alpha, alphaMap: alpha || null, depthWrite: false});
+    const p = new THREE.Mesh(new THREE.PlaneGeometry(w, h), m); p.rotation.x = -Math.PI/2; p.position.set((B.e0 + B.e1)/20, y, -(B.n0 + B.n1)/20); p.receiveShadow = true; p.renderOrder = ro; G.add(p); return p; };
   const feather = cvs(256, 256, (g, W, H) => { g.fillStyle = '#000'; g.fillRect(0, 0, W, H); const m = 22; for (let i = 0; i < m; i++) { const v = Math.round(255*i/m); g.strokeStyle = `rgb(${v},${v},${v})`; g.strokeRect(i + .5, i + .5, W - 2*i - 1, H - 2*i - 1); } g.fillStyle = '#fff'; g.fillRect(m, m, W - 2*m, H - 2*m); });
-  feather.colorSpace = THREE.NoColorSpace; plane(MD.B16, t16, -.02); plane(MD.B18, t18, 0, feather); plane(MD.B20, t20, .02, feather);
-  const under = mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({color: 0x4A3A28, roughness: 1}), false); under.rotation.x = -Math.PI/2; under.position.y = -.05; scene.add(under);
+  feather.colorSpace = THREE.NoColorSpace; plane(MD.B16, t16, -.02, null, -9); plane(MD.B18, t18, 0, feather, -12); plane(MD.B20, t20, .02, feather, -11);
+  const under = mesh(new THREE.PlaneGeometry(900, 900), new THREE.MeshStandardMaterial({color: 0x4A3A28, roughness: 1}), false); under.rotation.x = -Math.PI/2; under.position.y = -.05; under.material.depthWrite = false; under.renderOrder = -10; scene.add(under);
   G.updateMatrixWorld(true);
   const WP = (e, n, y = 0) => G.localToWorld(new THREE.Vector3(e/10, y, -n/10));
   const P = MD.pins, CF = (u, v) => [-50.7 + u*.9715 - v*.2371, 50.6 - u*.2371 - v*.9715];
