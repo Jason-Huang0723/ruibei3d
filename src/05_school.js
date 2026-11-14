@@ -173,16 +173,20 @@ const FIELD = { u0: 36.5, u1: 100.3, v0: 25.9, v1: 54.1 }, BBALL = { u0: 106, u1
 function courtCanvas(R, base, draw) { const K = 32, W = Math.round((R.u1 - R.u0) * K), H = Math.round((R.v1 - R.v0) * K), t = canvasTex(W, H, (g) => {
     noiseFill(g, Math.max(W, H), base, 0.07, Math.round(W * H / 60), 2);
     const X = u => (u - R.u0) * K, Y = v => (v - R.v0) * K; g.lineCap = 'round'; draw(g, X, Y, K); }, false); t.flipY = false; t.needsUpdate = true; return t; }
-function fieldTex() { return courtCanvas(FIELD, '#6a8580', (g, X, Y, K) => {
-  g.strokeStyle = 'rgba(244,244,236,0.92)'; g.lineWidth = 0.13 * K;
+function fieldTex() { return courtCanvas(FIELD, '#5f9a4d', (g, X, Y, K) => {
+  // 草皮：沿 u 方向一條深一條淺的割草紋（使用者 11/14：大足球場＋小足球場，是草皮）
+  for (let u = FIELD.u0, i = 0; u < FIELD.u1; u += 3.2, i++) { g.fillStyle = i % 2 ? 'rgba(255,255,230,0.07)' : 'rgba(0,30,0,0.06)'; g.fillRect(X(u), 0, 3.2 * K, (FIELD.v1 - FIELD.v0) * K); }
+  g.strokeStyle = 'rgba(246,246,238,0.94)'; g.lineWidth = 0.14 * K;
   const rect = (a, b, c, d) => g.strokeRect(X(a), Y(c), X(b) - X(a), Y(d) - Y(c)), arc = (u, v, r, a0, a1) => { g.beginPath(); g.arc(X(u), Y(v), r * K, a0, a1); g.stroke(); }, line = (a, b, c, d) => { g.beginPath(); g.moveTo(X(a), Y(b)); g.lineTo(X(c), Y(d)); g.stroke(); };
-  const vm = 40.25; rect(38.4, 79.3, 28.1, 52.4); line(58.9, 28.1, 58.9, 52.4); arc(58.9, vm, 3.0, 0, 7); arc(38.4, vm, 6.2, -Math.PI / 2, Math.PI / 2); arc(79.3, vm, 6.2, Math.PI / 2, Math.PI * 1.5);
-  g.fillStyle = 'rgba(244,244,236,0.92)'; g.beginPath(); g.arc(X(58.9), Y(vm), 0.2 * K, 0, 7); g.fill();
+  const dot = (u, v) => { g.fillStyle = 'rgba(246,246,238,0.94)'; g.beginPath(); g.arc(X(u), Y(v), 0.2 * K, 0, 7); g.fill(); };
+  // 大足球場（長邊沿 u）
+  const vm = 40.25; rect(38.4, 79.3, 28.1, 52.4); line(58.9, 28.1, 58.9, 52.4); arc(58.9, vm, 3.0, 0, 7); dot(58.9, vm);
+  arc(38.4, vm, 6.2, -Math.PI / 2, Math.PI / 2); arc(79.3, vm, 6.2, Math.PI / 2, Math.PI * 1.5);
   rect(37.5, 38.4, vm - 1.5, vm + 1.5); rect(79.3, 80.2, vm - 1.5, vm + 1.5);
-  // 籃球場（長邊沿 v）
-  const bu = 89.5; rect(83.1, 95.9, 28.1, 52.4); line(83.1, vm, 95.9, vm); arc(bu, vm, 1.8, 0, 7);
-  rect(bu - 2.45, bu + 2.45, 28.1, 33.9); arc(bu, 33.9, 1.8, 0, Math.PI); rect(bu - 2.45, bu + 2.45, 46.6, 52.4); arc(bu, 46.6, 1.8, Math.PI, Math.PI * 2);
-  arc(bu, 29.7, 6.0, 0.35, Math.PI - 0.35); arc(bu, 50.8, 6.0, Math.PI + 0.35, Math.PI * 2 - 0.35); }); }
+  // 小足球場（在大球場東邊，長邊沿 v，跟大球場垂直）
+  const su = 89.5; rect(83.1, 95.9, 28.1, 52.4); line(83.1, vm, 95.9, vm); arc(su, vm, 2.0, 0, 7); dot(su, vm);
+  arc(su, 28.1, 4.2, 0, Math.PI); arc(su, 52.4, 4.2, Math.PI, Math.PI * 2);
+  rect(su - 1.5, su + 1.5, 27.3, 28.1); rect(su - 1.5, su + 1.5, 52.4, 53.2); }); }
 function bballTex() { return courtCanvas(BBALL, '#6a4f58', (g, X, Y, K) => {
   g.strokeStyle = 'rgba(236,226,226,0.72)'; g.lineWidth = 0.1 * K;
   const rect = (a, b, c, d) => g.strokeRect(X(a), Y(c), X(b) - X(a), Y(d) - Y(c)), arc = (u, v, r, a0, a1) => { g.beginPath(); g.arc(X(u), Y(v), r * K, a0, a1); g.stroke(); };

@@ -74,12 +74,13 @@ async function exportScenes(list, opt, msg) {
   const comp = new OffscreenCanvas(W, H), cg = comp.getContext('2d'); const files = [];
   try { for (const i of list) { const sc = (opt.scenes || RB.SCENES)[i], target = new ArrayBufferTarget(), mux = new Muxer({ target, video: { codec: 'avc', width: W, height: H, frameRate: fps }, fastStart: 'in-memory' }); let err = null;
       const enc = new VideoEncoder({ output: (c, m) => mux.addVideoChunk(c, m), error: e => err = e }); enc.configure({ codec, width: W, height: H, bitrate: fps > 30 ? 20e6 : 14e6, framerate: fps, hardwareAcceleration: hwPref });
-      RB.resetScene(sc); const N = Math.round(sc.dur * fps) + 1;
+      const probeOut = []; RB.resetScene(sc); const N = Math.round(sc.dur * fps) + 1;
       for (let f = 0; f < N; f++) { if (f > 0) RB.step(1 / fps); RB.applyCamera(cam); RB.renderFrame(); cg.drawImage(canvas, 0, 0, W, H); RB.drawOverlay(cg, W, H, cam, Object.assign({ labels: opt.labels, fade: true }, opt.ov || {}));
+        if (opt.probe) { const fr = []; for (const k in opt.probe) { const v = new THREE.Vector3(...opt.probe[k]).project(cam); fr.push(Math.round((v.x + 1) * W / 2 * 10) / 10, Math.round((1 - v.y) * H / 2 * 10) / 10, v.z < 1 ? 1 : 0); } probeOut.push(fr); }
         const fr = new VideoFrame(comp, { timestamp: Math.round(f * 1e6 / fps), duration: Math.round(1e6 / fps) }); enc.encode(fr, { keyFrame: f % (fps * 2) === 0 }); fr.close(); if (err) throw err;
         while (enc.encodeQueueSize > 4) await yieldNow(); if (f % 15 === 0) { msg(sc.name + '：' + Math.round(f / N * 100) + '%（' + (list.indexOf(i) + 1) + '/' + list.length + '）'); RB.expProgress = { scene: i, f, N }; await yieldNow(); } }
       await enc.flush(); mux.finalize(); const name = opt.scenes ? sc.key + '.mp4' : '瑞北導覽_' + String(i).padStart(2, '0') + '_' + sc.name + (opt.labels ? '' : '_無字幕') + '.mp4';
-      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })); a.download = name; document.body.appendChild(a); a.click(); files.push(name); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([target.buffer], { type: 'video/mp4' })); a.download = name; document.body.appendChild(a); a.click(); files.push(name); if (opt.probe) { const b = document.createElement('a'); b.href = URL.createObjectURL(new Blob([JSON.stringify({ keys: Object.keys(opt.probe), fps, dur: sc.dur, vo: sc.vo, frames: probeOut })], { type: 'application/json' })); b.download = sc.key + '_probe.json'; document.body.appendChild(b); b.click(); } setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 60000); }
     msg('完成，已下載 ' + files.length + ' 個影片。'); }
   catch (e) { msg('匯出失敗：' + e.message); console.error(e); }
   finally { exporting = false; renderer.setPixelRatio(DPR()); renderer.setSize(innerWidth, innerHeight, false); cam.aspect = innerWidth / innerHeight; cam.updateProjectionMatrix(); setScene(cur, false); }
