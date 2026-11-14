@@ -101,7 +101,10 @@ function schoolMaterials() {
     const heart = (x, y, s, c) => { g.fillStyle = c; g.beginPath(); g.moveTo(x, y + s * 0.3); g.bezierCurveTo(x, y, x - s / 2, y, x - s / 2, y + s * 0.3); g.bezierCurveTo(x - s / 2, y + s * 0.6, x, y + s * 0.8, x, y + s); g.bezierCurveTo(x, y + s * 0.8, x + s / 2, y + s * 0.6, x + s / 2, y + s * 0.3); g.bezierCurveTo(x + s / 2, y, x, y, x, y + s * 0.3); g.fill(); };
     heart(110, 30, 80, '#e63946'); heart(250, 50, 60, '#ff7f50'); heart(390, 25, 90, '#e63946');
     for (let i = 0; i < 5; i++) { const x = 60 + i * 95, c = ['#ffbe0b', '#3a86ff', '#ff006e', '#8338ec', '#06d6a0'][i]; g.fillStyle = '#f6d1b0'; g.beginPath(); g.arc(x, 165, 20, 0, 7); g.fill(); g.fillStyle = c; g.fillRect(x - 18, 186, 36, 50); g.fillStyle = '#333'; g.fillRect(x - 7, 160, 4, 4); g.fillRect(x + 3, 160, 4, 4); } }, false) });
-  M.roof = S({ roughness: 0.7, side: THREE.DoubleSide, map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#c0533c'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { g.fillStyle = 'rgba(0,0,0,0.22)'; g.fillRect(0, y, w, 2); for (let x = (y / 8 % 2) * 8; x < w; x += 16) { g.fillStyle = 'rgba(0,0,0,0.12)'; g.fillRect(x, y, 1, 8); } } }) });
+  M.roof = S({ roughness: 0.7, side: THREE.DoubleSide, map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#e9714f'; g.fillRect(0, 0, w, h); for (let y = 0; y < h; y += 8) { g.fillStyle = 'rgba(120,30,10,0.13)'; g.fillRect(0, y, w, 2); for (let x = (y / 8 % 2) * 8; x < w; x += 16) { g.fillStyle = 'rgba(120,30,10,0.07)'; g.fillRect(x, y, 1, 8); } } }) });
+  // 太陽能板：一片 1 m × 1.65 m（貼圖重複），深藍紫＋細格線＋淺色框
+  M.pv = S({ roughness: 0.35, metalness: 0.25, side: THREE.DoubleSide, map: canvasTex(64, 106, (g, w, h) => { g.fillStyle = '#2a2b48'; g.fillRect(0, 0, w, h); g.strokeStyle = 'rgba(120,130,175,0.55)'; g.lineWidth = 1; for (let i = 1; i < 6; i++) { g.beginPath(); g.moveTo(i * w / 6, 0); g.lineTo(i * w / 6, h); g.stroke(); } for (let j = 1; j < 10; j++) { g.beginPath(); g.moveTo(0, j * h / 10); g.lineTo(w, j * h / 10); g.stroke(); } g.strokeStyle = '#b9bdcc'; g.lineWidth = 3; g.strokeRect(1.5, 1.5, w - 3, h - 3); }) });
+  M.roofGrey = S({ color: 0x9a9aac, roughness: 0.7, side: THREE.DoubleSide }); M.roofWhite = S({ color: 0xe2e3e4, roughness: 0.8 }); M.pool = S({ color: 0x2f5a52, roughness: 0.3 });
   M.canopy = S({ color: 0x67b8aa, roughness: 0.4, transparent: true, opacity: 0.8, side: THREE.DoubleSide });
   M.mat1 = S({ color: 0xe86a5a, roughness: 0.9 }); M.mat2 = S({ color: 0x5aa0e8, roughness: 0.9 }); M.mat3 = S({ color: 0xf2c94c, roughness: 0.9 }); M.mat4 = S({ color: 0x6fcf97, roughness: 0.9 });
   M.fence = S({ color: 0x4d6b5c, roughness: 0.6, metalness: 0.3 });
@@ -114,9 +117,11 @@ function schoolMaterials() {
   M.plaque = textMat('瑞 北 國 民 小 學', { bg: '#6c6e70', fg: '#3a3a3a', size: 62 });
   M.sign = textMat('花蓮縣瑞北國民小學', { bg: '#f1ebda', fg: '#5a5a5a', size: 56 });
   M.grass = S({ roughness: 1, map: canvasTex(512, 512, (g, n) => { noiseFill(g, n, '#6c8a4c', 0.24, 30000, 3); for (let i = 0; i < 40; i++) { const x = Math.random() * n, y = Math.random() * n, r = 20 + Math.random() * 60, gr = g.createRadialGradient(x, y, 0, x, y, r); gr.addColorStop(0, 'rgba(140,120,70,0.22)'); gr.addColorStop(1, 'rgba(140,120,70,0)'); g.fillStyle = gr; g.fillRect(x - r, y - r, 2 * r, 2 * r); } }) });
-  M.clay = S({ roughness: 1, map: canvasTex(256, 256, (g, n) => noiseFill(g, n, '#a95b3c', 0.18, 18000, 3)) });
+  M.clay = S({ roughness: 1, map: canvasTex(256, 256, (g, n) => noiseFill(g, n, '#cf8467', 0.16, 18000, 3)) });
   M.conc = S({ roughness: 0.95, map: canvasTex(256, 256, (g, n) => { noiseFill(g, n, '#b9b6ad', 0.10, 9000, 2); g.strokeStyle = 'rgba(60,60,60,0.35)'; g.lineWidth = 2; for (let i = 0; i <= n; i += n / 2) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, n); g.stroke(); g.beginPath(); g.moveTo(0, i); g.lineTo(n, i); g.stroke(); } }) });
   M.court = S({ roughness: 0.9, color: 0x3f6f5a }); M.line = S({ color: 0xf2f2ea, roughness: 0.8 });
+  // 操場（灰綠色硬地球場）：西邊足球場、東邊直的籃球場；東側籃球場：暗紅色。貼圖一張鋪滿（32 px／公尺）
+  M.field = S({ roughness: 0.92, map: fieldTex() }); M.bball = S({ roughness: 0.92, map: bballTex() });
   M.bag = S({ vertexColors: true, roughness: 0.9 });
   M.doorGreen = S({ color: 0x3f8f5f, roughness: 0.6 }); M.knob = S({ color: 0xc9ccd0, roughness: 0.3, metalness: 0.8 }); M.foamR = S({ color: 0xd9433a, roughness: 0.9 }); M.foamB = S({ color: 0x2f6fd0, roughness: 0.9 });
   M.glassDoor = S({ color: 0xbfd6e2, roughness: 0.05, metalness: 0.1, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide });
@@ -163,6 +168,43 @@ function gableRoof(mat, u0, u1, v0, v1, he, r, o) { const vm = (v0 + v1) / 2, P 
   const a = P(u0 - o, v0 - o, he - o * 0.4), b = P(u1 + o, v0 - o, he - o * 0.4), c = P(u1 + o, vm, he + r), d = P(u0 - o, vm, he + r), e = P(u0 - o, v1 + o, he - o * 0.4), f = P(u1 + o, v1 + o, he - o * 0.4);
   const L = u1 - u0 + 2 * o, S = Math.hypot(vm - v0 + o, r + o * 0.4), g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d, ...e, ...d, ...c, ...e, ...c, ...f, ...a, ...d, ...e, ...b, ...f, ...c], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, S / 2, 0, 0, L / 2, S / 2, 0, S / 2, 0, 0, 0, S / 2, L / 2, S / 2, 0, 0, L / 2, S / 2, L / 2, 0, 0, 0, 0.5, 0.5, 1, 0, 0, 0, 1, 0, 0.5, 0.5], 2)); g.computeVertexNormals(); addPart(mat, g, new THREE.Matrix4()); }
+// ---- 照衛星影像做的地面：球場線（u,v 公尺 → 貼圖像素，32 px/m；flipY 關掉，畫布上方＝v 小） ----
+const FIELD = { u0: 36.5, u1: 100.3, v0: 25.9, v1: 54.1 }, BBALL = { u0: 106, u1: 124, v0: 6, v1: 44 };
+function courtCanvas(R, base, draw) { const K = 32, W = Math.round((R.u1 - R.u0) * K), H = Math.round((R.v1 - R.v0) * K), t = canvasTex(W, H, (g) => {
+    noiseFill(g, Math.max(W, H), base, 0.07, Math.round(W * H / 60), 2);
+    const X = u => (u - R.u0) * K, Y = v => (v - R.v0) * K; g.lineCap = 'round'; draw(g, X, Y, K); }, false); t.flipY = false; t.needsUpdate = true; return t; }
+function fieldTex() { return courtCanvas(FIELD, '#6a8580', (g, X, Y, K) => {
+  g.strokeStyle = 'rgba(244,244,236,0.92)'; g.lineWidth = 0.13 * K;
+  const rect = (a, b, c, d) => g.strokeRect(X(a), Y(c), X(b) - X(a), Y(d) - Y(c)), arc = (u, v, r, a0, a1) => { g.beginPath(); g.arc(X(u), Y(v), r * K, a0, a1); g.stroke(); }, line = (a, b, c, d) => { g.beginPath(); g.moveTo(X(a), Y(b)); g.lineTo(X(c), Y(d)); g.stroke(); };
+  const vm = 40.25; rect(38.4, 79.3, 28.1, 52.4); line(58.9, 28.1, 58.9, 52.4); arc(58.9, vm, 3.0, 0, 7); arc(38.4, vm, 6.2, -Math.PI / 2, Math.PI / 2); arc(79.3, vm, 6.2, Math.PI / 2, Math.PI * 1.5);
+  g.fillStyle = 'rgba(244,244,236,0.92)'; g.beginPath(); g.arc(X(58.9), Y(vm), 0.2 * K, 0, 7); g.fill();
+  rect(37.5, 38.4, vm - 1.5, vm + 1.5); rect(79.3, 80.2, vm - 1.5, vm + 1.5);
+  // 籃球場（長邊沿 v）
+  const bu = 89.5; rect(83.1, 95.9, 28.1, 52.4); line(83.1, vm, 95.9, vm); arc(bu, vm, 1.8, 0, 7);
+  rect(bu - 2.45, bu + 2.45, 28.1, 33.9); arc(bu, 33.9, 1.8, 0, Math.PI); rect(bu - 2.45, bu + 2.45, 46.6, 52.4); arc(bu, 46.6, 1.8, Math.PI, Math.PI * 2);
+  arc(bu, 29.7, 6.0, 0.35, Math.PI - 0.35); arc(bu, 50.8, 6.0, Math.PI + 0.35, Math.PI * 2 - 0.35); }); }
+function bballTex() { return courtCanvas(BBALL, '#6a4f58', (g, X, Y, K) => {
+  g.strokeStyle = 'rgba(236,226,226,0.72)'; g.lineWidth = 0.1 * K;
+  const rect = (a, b, c, d) => g.strokeRect(X(a), Y(c), X(b) - X(a), Y(d) - Y(c)), arc = (u, v, r, a0, a1) => { g.beginPath(); g.arc(X(u), Y(v), r * K, a0, a1); g.stroke(); };
+  const bu = 115, va = 11, vb = 39, vm = 25; rect(bu - 7.5, bu + 7.5, va, vb); g.beginPath(); g.moveTo(X(bu - 7.5), Y(vm)); g.lineTo(X(bu + 7.5), Y(vm)); g.stroke(); arc(bu, vm, 1.8, 0, 7);
+  rect(bu - 2.45, bu + 2.45, va, va + 5.8); arc(bu, va + 5.8, 1.8, 0, Math.PI); rect(bu - 2.45, bu + 2.45, vb - 5.8, vb); arc(bu, vb - 5.8, 1.8, Math.PI, Math.PI * 2);
+  arc(bu, va + 1.575, 6.75, 0.2, Math.PI - 0.2); arc(bu, vb - 1.575, 6.75, Math.PI + 0.2, Math.PI * 2 - 0.2); }); }
+// 一張貼圖剛好鋪滿的地面
+function texPatch(mat, R, lift) { const g = new THREE.BufferGeometry(), pos = [], uv = []; for (const [i, j] of [[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]]) { const u = R.u0 + (R.u1 - R.u0) * i, v = R.v0 + (R.v1 - R.v0) * j, [x, y] = RB.uv2xy(u, v); pos.push(x, RB.GROUND + lift, -y); uv.push(i, j); }
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.computeVertexNormals(); if (g.attributes.normal.getY(0) < 0) { const p = g.attributes.position.array; for (let k = 0; k < p.length; k += 9) for (let c = 0; c < 3; c++) { const t = p[k + 3 + c]; p[k + 3 + c] = p[k + 6 + c]; p[k + 6 + c] = t; } const q = g.attributes.uv.array; for (let k = 0; k < q.length; k += 6) for (let c = 0; c < 2; c++) { const t = q[k + 2 + c]; q[k + 2 + c] = q[k + 4 + c]; q[k + 4 + c] = t; } g.computeVertexNormals(); }
+  addPart(mat, g, new THREE.Matrix4()); }
+// 雙斜屋頂（第二版）：axis 'u' 屋脊沿 u、'v' 屋脊沿 v；a 沿屋脊、b 橫跨屋脊
+function gable2(mat, axis, a0, a1, b0, b1, he, r, o) { const bm = (b0 + b1) / 2, P = (a, b, h) => { const [x, y] = axis === 'u' ? RB.uv2xy(a, b) : RB.uv2xy(b, a); return [x, RB.GROUND + h, -y]; };
+  const a = P(a0 - o, b0 - o, he - o * 0.4), b = P(a1 + o, b0 - o, he - o * 0.4), c = P(a1 + o, bm, he + r), d = P(a0 - o, bm, he + r), e = P(a0 - o, b1 + o, he - o * 0.4), f = P(a1 + o, b1 + o, he - o * 0.4);
+  const L = a1 - a0 + 2 * o, S = Math.hypot(bm - b0 + o, r + o * 0.4), g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute([...a, ...b, ...c, ...a, ...c, ...d, ...e, ...d, ...c, ...e, ...c, ...f, ...a, ...d, ...e, ...b, ...f, ...c], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, L / 2, 0, L / 2, S / 2, 0, 0, L / 2, S / 2, 0, S / 2, 0, 0, 0, S / 2, L / 2, S / 2, 0, 0, L / 2, S / 2, L / 2, 0, 0, 0, 0.5, 0.5, 1, 0, 0, 0, 1, 0, 0.5, 0.5], 2)); g.computeVertexNormals(); addPart(mat, g, new THREE.Matrix4()); }
+// 屋頂上的太陽能板：rows = [[pa0, pa1, pb0, pb1], ...]（每塊在屋脊同一側），貼在斜面上方 7 公分
+function pv2(axis, a0, a1, b0, b1, he, r, o, rows) { const bm = (b0 + b1) / 2, H = b => { const t = b <= bm ? (b - (b0 - o)) / (bm - (b0 - o)) : ((b1 + o) - b) / ((b1 + o) - bm); return he - o * 0.4 + (r + o * 0.4) * t + 0.07; };
+  const P = (a, b) => { const [x, y] = axis === 'u' ? RB.uv2xy(a, b) : RB.uv2xy(b, a); return [x, RB.GROUND + H(b), -y]; };
+  for (const [pa0, pa1, pb0, pb1] of rows) { const A = P(pa0, pb0), B = P(pa1, pb0), C = P(pa1, pb1), D = P(pa0, pb1), su = (pa1 - pa0) / 1.0, sv = Math.hypot(pb1 - pb0, H(pb1) - H(pb0)) / 1.65, g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute([...A, ...B, ...C, ...A, ...C, ...D], 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute([0, 0, su, 0, su, sv, 0, 0, su, sv, 0, sv], 2)); g.computeVertexNormals(); addPart(RB.SM.pv, g, new THREE.Matrix4()); } }
+// 兩排板子，一排在屋脊一側（照衛星影像，兩側各留一點橘色邊）
+const pvRows = (pa0, pa1, b0, b1, edge, gap) => { const bm = (b0 + b1) / 2; return [[pa0, pa1, b0 + edge, bm - gap], [pa0, pa1, bm + gap, b1 - edge]]; };
 function groundPatch(mat, u0, u1, v0, v1, lift, uvm) { const nu = Math.max(2, Math.ceil((u1 - u0) / 2) + 1), nv = Math.max(2, Math.ceil((v1 - v0) / 2) + 1), pos = [], uv = [], idx = [];
   for (let j = 0; j < nv; j++) for (let i = 0; i < nu; i++) { const u = u0 + (u1 - u0) * i / (nu - 1), v = v0 + (v1 - v0) * j / (nv - 1), [x, y] = RB.uv2xy(u, v); pos.push(x, RB.GROUND + lift, -y); uv.push((u - u0) / uvm, (v - v0) / uvm); }
   for (let j = 0; j < nv - 1; j++) for (let i = 0; i < nu - 1; i++) { const k = j * nu + i; idx.push(k, k + nu, k + 1, k + 1, k + nu, k + nu + 1); }
@@ -223,7 +265,11 @@ RB.buildSchool = () => {
   slab(UW, 29.5, V0 + 0.25, V2); slab(32.7, 70.2, V0 + 0.25, V2); slab(73.4, UE, V0 + 0.25, V2); for (const s of STAIRS) slab(s, s + 3.2, 11.8, V2);
   obox(M.trim, UW, UE, V0, V0 + 0.25, F2 - 0.3, F2); obox(M.trim, 32.7, UE, V2 - 0.05, V2 + 0.1, F2 - 0.3, F2);
   obox(M.trim, UW - 0.3, UE + 0.3, V0 - 0.3, V2 + 0.5, EAVE - 0.3, EAVE); obox(M.ceil, UW, UE, V0 + 0.25, V2, CEIL2, CEIL2 + 0.01);
-  gableRoof(M.roof, UW, UE, V0, V2, EAVE, 2.2, 0.6);
+  // 屋頂照衛星影像（2026-11-14）：西翼一條南北向屋脊、教室大樓 u 22.6–68.8、廁所到禮堂之間一段 u 68.8–84.4，都鋪太陽能板
+  gable2(M.roof, 'v', V0 - 0.4, WS, UW - 0.3, 23.4, EAVE, 1.8, 0.5); pv2('v', V0 - 0.4, WS, UW - 0.3, 23.4, EAVE, 1.8, 0.5, pvRows(V0 + 0.6, WS - 2.4, UW - 0.3, 23.4, 0.6, 0.35));
+  gable2(M.roof, 'u', 22.6, 68.8, V0, V2, EAVE, 2.2, 0.6); pv2('u', 22.6, 68.8, V0, V2, EAVE, 2.2, 0.6, pvRows(23.6, 67.6, V0, V2, 1.6, 0.3));
+  obox(M.wall, UE, 84.6, V0, V1, 0, EAVE - 0.3); obox(M.trim, UE, 84.6, V0 - 0.3, V1 + 0.2, EAVE - 0.3, EAVE);
+  gable2(M.roof, 'u', 68.8, 84.4, V0, V2, EAVE, 2.0, 0.6); pv2('u', 68.8, 84.4, V0, V2, EAVE, 2.0, 0.6, pvRows(70.0, 83.2, V0, V2, 0.9, 0.3));
   // 北外牆（大窗）
   for (const fl of [1, 2]) { const hb = fl === 1 ? 0 : F2, ht = fl === 1 ? F2 - 0.3 : EAVE - 0.3, ops = []; for (const [a0, a1] of NB[fl]) for (let a = a0 + 0.6; a < a1 - 1.0; a += 2.3) ops.push({ a, b: Math.min(a + 1.9, a1 - 0.5), lo: hb + 0.9, hi: hb + 2.8, glass: true }); for (const s of STAIRS) ops.push({ a: s + 0.6, b: s + 2.6, lo: hb + 1.6, hi: hb + 2.9, glass: true }); wallU(M, M.wall, V0, V0 + 0.25, UW, UE, hb, ht, ops); }
   // 西牆（一樓到辦公室南牆、二樓到 v=15）、東端
@@ -366,13 +412,12 @@ RB.buildSchool = () => {
     const winS = [], winN = []; for (let a = u0 + 3.5; a < u1 - 6; a += 3.4) { winN.push({ a, b: a + 1.8, lo: 2.2, hi: 6.2, glass: true }); if (a > u0 + 5) winS.push({ a, b: a + 1.8, lo: 2.2, hi: 6.2, glass: true }); }
     winS.push({ a: u0 + 2.0, b: u0 + 4.0, lo: F1, hi: F1 + 2.5 });   // 後門（靠操場）
     wallU(M, M.hall, V0, V0 + wi, u0, u1, 0, hh, winN); wallU(M, M.hall, V2 - wi, V2, u0, u1, 0, hh, winS);
-    // 西牆：門在走廊盡頭（雙開，往禮堂裡開）
-    wallV(M, M.teal, u0, u0 + wi, V0, V2, 0, hh, [{ a: 12.5, b: 14.5, lo: F1, hi: F1 + 2.3 }]);
-    doorLeaf(G, M, 'hallW1', { axis: 'v', a: 12.5, b: 13.5, c: u0 + wi / 2, h0: F1, h1: F1 + 2.28, hinge: 'a', to: 1 }); doorLeaf(G, M, 'hallW2', { axis: 'v', a: 13.5, b: 14.5, c: u0 + wi / 2, h0: F1, h1: F1 + 2.28, hinge: 'b', to: 1 });
+    // 西牆：沒有門（使用者 11/14 確認）
+    wallV(M, M.teal, u0, u0 + wi, V0, V2, 0, hh);
     wallV(M, M.paleGreen, u1 - wi, u1, V0, V2, 0, hh);
     obox(M.door, u0 + 1.95, u0 + 2.0, V2 - wi, V2, F1, F1 + 2.5); obox(M.door, u0 + 4.0, u0 + 4.05, V2 - wi, V2, F1, F1 + 2.5);
     // 牆腳白磁磚、窗邊玫瑰紅窗簾、冷氣
-    dadoU(M.tileGrid, V0 + wi, 1, u0 + wi, 99.4, F1, F1 + 1.3); dadoU(M.tileGrid, V2 - wi, -1, u0 + wi, 99.4, F1, F1 + 1.3, [[u0 + 2.0, u0 + 4.0]]); dadoV(M.tileGrid, u0 + wi, 1, V0 + wi, V2 - wi, F1, F1 + 1.3, [[12.45, 14.55]]);
+    dadoU(M.tileGrid, V0 + wi, 1, u0 + wi, 99.4, F1, F1 + 1.3); dadoU(M.tileGrid, V2 - wi, -1, u0 + wi, 99.4, F1, F1 + 1.3, [[u0 + 2.0, u0 + 4.0]]); dadoV(M.tileGrid, u0 + wi, 1, V0 + wi, V2 - wi, F1, F1 + 1.3);
     for (const o of winN) { obox(M.rose, o.a - 0.55, o.a - 0.05, V0 + wi + 0.05, V0 + wi + 0.12, 1.7, 6.6); obox(M.rose, o.b + 0.05, o.b + 0.55, V0 + wi + 0.05, V0 + wi + 0.12, 1.7, 6.6); }
     for (const o of winS.filter(o => o.glass)) { obox(M.rose, o.a - 0.55, o.a - 0.05, V2 - wi - 0.12, V2 - wi - 0.05, 1.7, 6.6); obox(M.rose, o.b + 0.05, o.b + 0.55, V2 - wi - 0.12, V2 - wi - 0.05, 1.7, 6.6); }
     for (const a of [u0 + 7.6, u0 + 14.4]) { obox(M.ac, a, a + 1.0, V0 + wi, V0 + wi + 0.26, 6.55, 6.88); obox(M.ac, a, a + 1.0, V2 - wi - 0.26, V2 - wi, 6.55, 6.88); }
@@ -382,7 +427,7 @@ RB.buildSchool = () => {
     obox(M.paleGreen, 99.4, 99.6, 4.9, 12.1, 7.0, hh);
     // 舞台兩側小房間（面向舞台：左＝北側放庶務、右＝南側電源）
     for (const [va, vb, vw] of [[V0 + wi, 5.0, 5.0], [12.0, V2 - wi, 12.0]]) { obox(M.hall, 99.5, u1 - wi, vw - 0.1, vw + 0.1, F1, 4.2); wallV(M, M.hall, 99.4, 99.6, va, vb, F1, 4.2, [{ a: (va + vb) / 2 - 0.5, b: (va + vb) / 2 + 0.5, lo: F1, hi: F1 + 2.1 }]); obox(M.door, 99.36, 99.4, (va + vb) / 2 - 0.5, (va + vb) / 2 - 0.45, F1, F1 + 2.1); obox(M.hall, 99.5, u1 - wi, va, vb, 4.2, 4.35); obox(M.tileGrid, 99.36, 99.4, va, (va + vb) / 2 - 0.55, F1, F1 + 1.3); obox(M.tileGrid, 99.36, 99.4, (va + vb) / 2 + 0.55, vb, F1, F1 + 1.3); }
-    obox(M.trim, u0, u1, V0, V2, hh - 0.2, hh); obox(M.ceil, u0 + wi, u1 - wi, V0 + wi, V2 - wi, hh - 0.21, hh - 0.2); gableRoof(M.roof, u0, u1, V0, V2, hh, 2.6, 0.7);
+    obox(M.trim, u0, u1, V0, V2, hh - 0.2, hh); obox(M.ceil, u0 + wi, u1 - wi, V0 + wi, V2 - wi, hh - 0.21, hh - 0.2); gable2(M.roof, 'u', u0, 100.9, V0, V2, hh, 2.6, 0.7); pv2('u', u0, 100.9, V0, V2, hh, 2.6, 0.7, pvRows(88.3, 100.3, V0, V2, 0.8, 0.35)); obox(M.roofWhite, 100.9, u1 + 0.3, V0 - 0.4, V2 + 0.4, hh, hh + 1.2);
     // 桌子（依使用者畫的）：舞台前一張橫放的長桌，前面六張桌子，後面（西半邊）空著
     const tbl = (a, b, c, d) => { obox(M.hallTable, a, b, c, d, F1 + 0.72, F1 + 0.76); for (const [u, v] of [[a + 0.1, c + 0.1], [b - 0.1, c + 0.1], [a + 0.1, d - 0.1], [b - 0.1, d - 0.1]]) obox(M.metal, u - 0.02, u + 0.02, v - 0.02, v + 0.02, F1, F1 + 0.72);
       if (b - a > d - c) { for (let u = a + 0.35; u < b - 0.2; u += 0.6) { L.fold.push([u, c - 0.35, F1, 0]); L.fold.push([u, d + 0.35, F1, Math.PI]); } } else { for (let v = c + 0.35; v < d - 0.2; v += 0.6) { L.fold.push([a - 0.35, v, F1, Math.PI / 2]); L.fold.push([b + 0.35, v, F1, -Math.PI / 2]); } } };
@@ -392,8 +437,8 @@ RB.buildSchool = () => {
   // ===== 西側風雨走廊（藍綠色透光雨遮、白色鋼柱），從走廊轉角往南接到國幼班 =====
   obox(M.canopy, 20.6, 24.8, WS, 55, 3.0, 3.06); for (let v = WS + 0.2; v <= 55; v += 3.4) { obox(M.column, 20.95, 21.15, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 24.25, 24.45, v - 0.1, v + 0.1, 0, 3.0); obox(M.column, 20.95, 24.45, v - 0.05, v + 0.05, 2.9, 3.0); } obox(M.column, 20.95, 21.15, WS, 55, 2.9, 3.0); obox(M.column, 24.25, 24.45, WS, 55, 2.9, 3.0); obox(M.floor, 20.8, 24.6, WS, 55, 0, 0.15, [2, 2]);
   // ===== 南排：器材室（往後移到國幼班西南邊）、國幼班（西側推門→長走廊→推門→一小塊磁磚，其餘木地板）、溜滑梯 =====
-  obox(M.wall, 20.5, 32.5, 64.6, 72, 0, FH + 0.3); obox(M.door, 25, 26.8, 64.55, 64.6, 0.15, 2.4); gableRoof(M.roof, 20.5, 32.5, 64.6, 72, FH + 0.3, 1.4, 0.4); panel(M.kMural, 'v', 65.1, 71.5, 0.6, FH + 0.1, 20.48, 1);
-  groundPatch(M.conc, 19.5, 33.0, 55, 64.6, 0.07, 6);
+  // 器材室：照衛星影像，在南排最西邊（u 18.1–27.6），灰框屋頂整片太陽能板
+  obox(M.wall, 18.1, 27.6, 55.4, 65.6, 0, FH + 0.3); obox(M.door, 25, 26.8, 55.35, 55.4, 0.15, 2.4); gable2(M.roofGrey, 'u', 18.1, 27.6, 55.4, 65.6, FH + 0.3, 1.2, 0.3); pv2('u', 18.1, 27.6, 55.4, 65.6, FH + 0.3, 1.2, 0.3, pvRows(18.4, 27.3, 55.4, 65.6, 0.2, 0.25)); panel(M.kMural, 'v', 56.0, 65.0, 0.6, FH + 0.1, 18.08, 1);
   { const u0 = 32, u1 = 77, vC = 58.5, vB = 66, vK = 61.4, uP = 54.5; obox(M.floor, u0, u1, 56, vC, 0, F1, [2, 2]);
     obox(M.tileW, u0 + 0.2, uP, vC + 0.2, vK, 0, F1 + 0.01); obox(M.tileW, uP, 59.8, vC + 0.2, vK, 0, F1 + 0.01); obox(M.woodFloor, uP + 0.1, u1 - 0.2, vC + 0.2, vB - 0.2, 0, F1, [3, 3]); obox(M.floor, u0 + 0.2, uP, vK, vB - 0.2, 0, F1, [2, 2]);
     const ops = []; for (let a = 33.0; a < u1 - 2; a += 2.6) ops.push({ a, b: a + 1.6, lo: F1 + 1.0, hi: F1 + 2.4, glass: true });
@@ -406,7 +451,8 @@ RB.buildSchool = () => {
     for (const u of [40.0, 47.5]) obox(M.wallIn, u - 0.08, u + 0.08, vK + 0.15, vB - 0.2, F1, FH);
     dadoU(M.tileGrid, vC + 0.2, 1, uP + 0.1, u1 - 0.2, F1, F1 + 1.25); dadoU(M.tileGrid, vB - 0.2, -1, uP + 0.1, u1 - 0.2, F1, F1 + 1.25);
     for (const o of ops.filter(o => o.a > uP)) { obox(M.pinkCurtain, o.a - 0.35, o.a + 0.05, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); obox(M.pinkCurtain, o.b - 0.05, o.b + 0.35, vC + 0.22, vC + 0.28, F1 + 0.9, F1 + 2.6); }
-    for (let u = u0; u <= u1 + 0.01; u += 3.2) obox(M.column, u - 0.15, u + 0.15, 56, 56.3, 0, FH); obox(M.trim, u0, u1, 55.8, vB, FH, FH + 0.3); obox(M.ceil, u0, u1, 55.8, vB, FH - 0.01, FH); gableRoof(M.roof, u0, u1, 56, vB, FH + 0.3, 1.6, 0.5);
+    for (let u = u0; u <= u1 + 0.01; u += 3.2) obox(M.column, u - 0.15, u + 0.15, 56, 56.3, 0, FH); obox(M.trim, u0, u1, 55.8, vB, FH, FH + 0.3); obox(M.ceil, u0, u1, 55.8, vB, FH - 0.01, FH); gable2(M.roof, 'u', 27.6, 66.2, 55.6, vB, FH + 0.3, 1.6, 0.5); pv2('u', 27.6, 66.2, 55.6, vB, FH + 0.3, 1.6, 0.5, pvRows(28.6, 57.6, 55.6, vB, 0.9, 0.3));
+    gable2(M.roofGrey, 'u', 66.2, 78.6, 55.6, vB, FH + 0.3, 1.6, 0.5); pv2('u', 66.2, 78.6, 55.6, vB, FH + 0.3, 1.6, 0.5, pvRows(67.6, 78.4, 55.6, vB, 0.1, 0.05));
     obox(M.white, 64, 68.5, 62.5, 63.5, F1 + 0.32, F1 + 0.37); for (let k = 0; k < 8; k++) (k % 2 ? L.bag2 : L.bag).push([62 + (k % 4) * 3.2, 60.6 + Math.floor(k / 4) * 3.6, F1 + 0.02, 0]);
     for (let u = u0 + 2; u < u1 - 1; u += 3) obox(M.light, u, u + 1.2, 62, 62.12, FH - 0.12, FH - 0.08); for (let u = u0 + 2; u < uP; u += 4) obox(M.light, u, u + 1.2, 59.9, 60.02, FH - 0.12, FH - 0.08); }
   { // 遊樂器材：只有溜滑梯（平台塔＋滑梯＋爬梯）
@@ -427,8 +473,8 @@ RB.buildSchool = () => {
   for (const [va, vb] of [[0.5, 27.8], [38.4, 44]]) { obox(M.pillar, -0.3, 0.4, va, vb, 0, 1.1, [1.2, 1.1]); obox(M.fence, 0.05, 0.15, va, vb, 1.1, 1.9); for (let v = va; v < vb; v += 0.15) obox(M.fence, 0.07, 0.13, v, v + 0.03, 1.1, 1.9); obox(M.grass, -1.4, -0.3, va, vb, 0, 0.5); obox(M.trim, -1.5, -1.3, va, vb, 0, 0.55); }
   panel(M.plaque, 'v', 39.0, 43.4, 0.4, 1.0, -0.32, 1);
   // ===== 地面 =====
-  groundPatch(M.conc, 0.6, 26, PV, 46, 0.07, 6); groundPatch(M.conc, 0.6, UW - 1.2, V1, PV, 0.07, 6); groundPatch(M.conc, 26, 105, 15, 18.7, 0.07, 6); groundPatch(M.clay, 26, 103, 18.7, 24, 0.08, 4); groundPatch(M.grass, 26, 98, 24, 54, 0.08, 8); groundPatch(M.conc, 24, 98, 54, 56, 0.07, 6); groundPatch(M.court, 106, 124, 6, 44, 0.08, 5);
-  groundPatch(M.line, 107, 123, 25, 25.15, 0.1, 1); groundPatch(M.line, 107, 107.15, 8, 42, 0.1, 1); groundPatch(M.line, 122.85, 123, 8, 42, 0.1, 1); groundPatch(M.conc, -6, 0.6, 30, 40, 0.06, 6);
+  groundPatch(M.conc, 0.6, 26, PV, 46, 0.07, 6); groundPatch(M.conc, 0.6, UW - 1.2, V1, PV, 0.07, 6); groundPatch(M.conc, 26, 105, 15, 18.7, 0.07, 6); groundPatch(M.grass, 26.6, 57.6, 15.5, 18.4, 0.09, 8); groundPatch(M.pool, 58.6, 66.2, 15.4, 18.3, 0.1, 4); groundPatch(M.clay, 28.2, 106, 18.7, FIELD.v0, 0.08, 4); groundPatch(M.grass, 26, FIELD.u0, 18.7, 54, 0.08, 8); texPatch(M.field, FIELD, 0.085); groundPatch(M.conc, 24, 98, 54, 56, 0.07, 6); texPatch(M.bball, BBALL, 0.08);
+  groundPatch(M.conc, -6, 0.6, 30, 40, 0.06, 6);
   // 家具（實例化）
   inst(F.deskTop, M.deskTop, L.deskTop); inst(F.deskBody, M.deskBody, L.deskBody); inst(F.chair, M.chair, L.chair); inst(F.fold, M.fold, L.fold); inst(F.kidChair, M.kidR, L.kidR); inst(F.kidChair, M.kidY, L.kidY); inst(F.kidChair, M.kidB, L.kidB);
   inst(F.mtTop, M.mtTop, L.mtTop); inst(F.mtBody, M.mtBody, L.mtBody); inst(F.chair, M.blueChair, L.blue); inst(F.roundTop, M.white, L.round); inst(F.shelf, M.shelf, L.shelf); inst(F.books, M.book, L.shelf.map(s => [s[0], s[1], s[2] + 0.02, s[3]]));
