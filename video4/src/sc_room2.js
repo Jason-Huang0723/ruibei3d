@@ -19,18 +19,12 @@ function buildRoom2(mode) {
   const board = new THREE.Group(); { const w = 2.6, h = 1.08; const back = rbox(w + .1, h + .1, .09, .035, M.woodDark); board.add(back);
     const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({map: boardTex(TXT, 1280, Math.round(1280*h/w)), roughness: .8})); face.position.z = .047; board.add(face);
     for (const s of [-1, 1]) { const r = mesh(new THREE.CylinderGeometry(.012, .012, 3.2, 6), M.rope); r.position.set(s*(w/2 - .3), h/2 + 1.6, 0); board.add(r); } scene.add(board); }
-  const hero = makeMascot(); scene.add(hero);
+  // 第五版（使用者 11/14）：開頭、結尾不要有吉祥物
   // 結尾：再多兩個小朋友一起揮手
-  const kids = mode === 'room2' ? [[-.75, .55, .58], [1.05, .62, .5]].map(([x, z, s]) => { const k = makeMascot({scale: s}); k.position.set(x, 0, z); scene.add(k); return k; }) : [];
   const T2 = mode === 'room1' ? L('2-02').start : 99;
   function update(t) {
     const down = spring(t, .25, 1.1, 3.2); board.position.set(0, 2.25 + (1 - down)*3.2, -.7); board.rotation.z = Math.sin(t*5.5)*.05*Math.exp(-t*1.8);
     const u = fade(t, 0, 6); cam.position.set(lerp(.25, -.05, u), 1.35, lerp(6.5, 6.05, u)); cam.lookAt(0, 1.08, 0);
-    const w = walker(t, [[0, 2.6, .3], [.15, 2.6, .3], [1.35, .15, .3]]); hero.position.set(w.x, 0, w.z); hero.rotation.y = w.walk > .1 ? -.7 : 0;
-    let aR = null; if (t > 1.3 && t < 2.5) aR = {x: 0, z: 2.5 + Math.sin(t*16)*.3}; else if (t > 2.5) aR = {x: -.3, z: 2.2};
-    if (mode === 'room2' && t > .9) aR = {x: 0, z: 2.5 + Math.sin(t*14)*.3};
-    poseMascot(hero, {walk: w.walk, ph: w.ph, t, aR, face: t > 2.5 && mode === 'room1' ? 'n' : 'front', blink: blinkAt(t)});
-    kids.forEach((k, i) => { k.rotation.y = i ? -.35 : .35; poseMascot(k, {t, aR: i ? null : {x: 0, z: 2.4 + Math.sin(t*15 + i)*.3}, aL: i ? {x: 0, z: 2.4 + Math.sin(t*13)*.3} : null, lift: hop(t % 1.6, .2 + i*.3, .4, .08), face: 'happy', blink: blinkAt(t, i + 2)}); });
   }
   function overlay(t) {
     let s = '';

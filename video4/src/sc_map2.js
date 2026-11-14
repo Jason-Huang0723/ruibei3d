@@ -23,9 +23,9 @@ async function buildMap2() {
     const cone = mesh(new THREE.ConeGeometry(.12, .6, 24), m); cone.rotation.x = Math.PI; cone.position.y = .38; g.add(cone); const dot = mesh(new THREE.SphereGeometry(.075, 16, 12), M.white); dot.position.set(0, .74, .16); g.add(dot); scene.add(g); return g; };
   const PINS = [
     {k: 'school', p: P.school, col: 0xE8873B, t: -1, name: '瑞北國小', sub: '', dy: 0},
-    {k: 'male', p: P.male, col: 0x4F8ED8, t: at('2-18', .6), name: '男教師宿舍', sub: '', dy: 0},
-    {k: 'female', p: P.female, col: 0xEE7A9B, t: L('2-19').start + .1, name: '女教師宿舍', sub: '', dy: 0},
-    {k: 'shop', p: P.shop, col: 0xD9534F, t: at('2-21', .31), name: '雜貨店', sub: 'Google 地圖：林上商號', dy: 0}];
+    {k: 'male', p: P.male, col: 0x4F8ED8, t: at('2-19', .6), name: '男教師宿舍', sub: '', dy: 0},
+    {k: 'female', p: P.female, col: 0xEE7A9B, t: L('2-20').start + .1, name: '女教師宿舍', sub: '', dy: 0},
+    {k: 'shop', p: P.shop, col: 0xD9534F, t: at('2-22', .31), name: '雜貨店', sub: 'Google 地圖：林上商號', dy: 0}];
   PINS.forEach(Q => { Q.g = mkPin(Q.col); const w = WP(...Q.p); Q.g.position.copy(w); Q.w = w; });
   // ---- 走路路線（學校 → 雜貨店），用累積距離對時間 ----
   const WK = MD.walk, CUM = [0]; for (let i = 1; i < WK.length; i++) CUM.push(CUM[i - 1] + Math.hypot(WK[i][0] - WK[i - 1][0], WK[i][1] - WK[i - 1][1]));
@@ -33,7 +33,7 @@ async function buildMap2() {
   const near = q => { let b = 0, d = 1e9; WK.forEach((p, i) => { const dd = Math.hypot(p[0] - q[0], p[1] - q[1]); if (dd < d) { d = dd; b = i; } }); return CUM[b]; };
   const sMale = near(P.male), sFem = near(P.female), sBr = near(P.bridge);
   const ptAt = s => { s = clamp(s, 0, LEN); let i = 1; while (i < CUM.length - 1 && CUM[i] < s) i++; const u = (s - CUM[i - 1])/((CUM[i] - CUM[i - 1]) || 1); return [lerp(WK[i - 1][0], WK[i][0], u), lerp(WK[i - 1][1], WK[i][1], u)]; };
-  const sKeys = [[.3, 0], [at('2-18', .62), sMale], [L('2-19').start + .5, sFem], [L('2-21').start + .1, sFem], [at('2-21', .17), sBr], [at('2-21', .34), LEN]];
+  const sKeys = [[.3, 0], [at('2-19', .62), sMale], [L('2-20').start + .5, sFem], [L('2-22').start + .1, sFem], [at('2-22', .17), sBr], [at('2-22', .34), LEN]];
   const sAt = t => kf(t, sKeys, u => u*u*(3 - 2*u)*.5 + u*.5);
   const hero = makeMascot(); hero.scale.setScalar(1.15); scene.add(hero);
   const place = (m, e, n, t, prev) => { const w = WP(e, n); m.position.copy(w); return w; };
@@ -45,8 +45,8 @@ async function buildMap2() {
   for (let i = 0; i < kidsN; i++) { const k = makeMascot({scale: .6}); k.scale.setScalar(1.1); scene.add(k); kids.push(k); }
   const sibs = [makeMascot(), makeMascot({cap: true})]; sibs.forEach(m => { m.scale.setScalar(1.05); scene.add(m); });
   const fl = flag(); sibs[0].userData.hands && sibs[0].userData.hands[1] ? sibs[0].userData.hands[1].add(fl) : sibs[0].add(fl); fl.scale.setScalar(1.3);
-  const T22 = L('2-22').start, T23 = L('2-23').start, T24 = L('2-24').start;
-  const tGo = at('2-23', .55), tArr = at('2-23', .74), tBack = at('2-23', .8), tHome = T24 + 1.6;
+  const T22 = L('2-23').start, T23 = L('2-24').start, T24 = L('2-25').start;
+  const tGo = at('2-24', .55), tArr = at('2-24', .74), tBack = at('2-24', .8), tHome = T24 + 1.6;
   // 哥姐：學校 → 雜貨店（沿走路路線），再一起走回學校
   const sibS = t => t < tArr ? kf(t, [[tGo, 0], [tArr, LEN - 4]]) : kf(t, [[tBack, LEN - 4], [tHome, 0]]);
   // ---- 回家路線（SVG 畫線，鏡頭投影） ----
@@ -61,11 +61,11 @@ async function buildMap2() {
   const bb = (() => { let e0 = 1e9, e1 = -1e9, n0 = 1e9, n1 = -1e9; for (const p of MD.red.concat(MD.green)) { e0 = Math.min(e0, p[0]); e1 = Math.max(e1, p[0]); n0 = Math.min(n0, p[1]); n1 = Math.max(n1, p[1]); } return {e: (e0 + e1)/2, n: (n0 + n1)/2}; })();
   const mid = [(P.gate[0] + P.shop[0])/2, (P.gate[1] + P.shop[1])/2], NB = CF(55, 10);
   const camK = [
-    [0, P.gate[0] + 6, P.gate[1] + 10, 11, .55], [at('2-18', .62), P.male[0] + 6, P.male[1] - 6, 11.5, .55], [L('2-20').start, (P.male[0] + P.female[0])/2, (P.male[1] + P.female[1])/2 - 4, 11.5, .55],
-    [at('2-21', .3), P.bridge[0] + 6, P.bridge[1], 12, .55], [E_('2-21'), P.shop[0] + 8, P.shop[1] - 4, 11, .55],
-    [at('2-22', .6), P.shop[0] + 6, P.shop[1] - 8, 11, .55], [at('2-23', .45), mid[0] + 4, mid[1], 24, .3], [at('2-23', .9), mid[0] + 4, mid[1], 24, .3],
-    [T24 + .9, NB[0] + 8, NB[1], 19, .32], [E_('2-24') + .3, NB[0] + 8, NB[1], 18.5, .32],
-    [at('2-25', .8), mid[0] - 20, mid[1] + 10, 40, .25], [at('2-26', .3), bb.e + 200, bb.n + 160, 165, .12], [E_('2-26'), bb.e + 200, bb.n + 160, 162, .12],
+    [0, P.gate[0] + 6, P.gate[1] + 10, 11, .55], [at('2-19', .62), P.male[0] + 6, P.male[1] - 6, 11.5, .55], [L('2-21').start, (P.male[0] + P.female[0])/2, (P.male[1] + P.female[1])/2 - 4, 11.5, .55],
+    [at('2-22', .3), P.bridge[0] + 6, P.bridge[1], 12, .55], [E_('2-22'), P.shop[0] + 8, P.shop[1] - 4, 11, .55],
+    [at('2-23', .6), P.shop[0] + 6, P.shop[1] - 8, 11, .55], [at('2-24', .45), mid[0] + 4, mid[1], 24, .3], [at('2-24', .9), mid[0] + 4, mid[1], 24, .3],
+    [T24 + .9, NB[0] + 8, NB[1], 19, .32], [E_('2-25') + .3, NB[0] + 8, NB[1], 18.5, .32],
+    [at('2-26', .18), mid[0] - 20, mid[1] + 10, 40, .25], [at('2-26', .5), bb.e + 200, bb.n + 160, 165, .12], [E_('2-26'), bb.e + 200, bb.n + 160, 162, .12],
     [T27 + .5, mid[0] + 4, mid[1], 32, .2], [T27 + 2.6, mid[0] + 4, mid[1], 31, .2],
     [T28 + .7, P.shop[0] - 120, P.shop[1] + 10, 45, .15], [T28 + 2.4, P.shop[0] - 125, P.shop[1] + 10, 44, .15],
     [T29 + .6, bb.e + 200, bb.n + 160, 165, .12], [E_('2-30') + .3, bb.e + 200, bb.n + 160, 160, .12], [T31 + 1.0, P.school[0] + 15, P.school[1] + 20, 40, .2], [sec.dur, P.school[0] + 15, P.school[1] + 20, 38, .2]];
@@ -74,7 +74,7 @@ async function buildMap2() {
   function setCam(t) {
     let [e, n, h, tilt] = camAt(t);
     // 宿舍、雜貨店那段鏡頭跟著小人
-    if (t < E_('2-21') + .3) { const q = ptAt(sAt(t)), q2 = ptAt(sAt(t + .6)), f = 1 - fade(t, E_('2-21') - .8, 1.1); e = lerp(e, (q[0] + q2[0])/2 + 4, f*.65); n = lerp(n, (q[1] + q2[1])/2 - 4, f*.65); }
+    if (t < E_('2-22') + .3) { const q = ptAt(sAt(t)), q2 = ptAt(sAt(t + .6)), f = 1 - fade(t, E_('2-22') - .8, 1.1); e = lerp(e, (q[0] + q2[0])/2 + 4, f*.65); n = lerp(n, (q[1] + q2[1])/2 - 4, f*.65); }
     // 早上：跟著接小朋友的哥姐
     if (t > tGo - .6 && t < tHome + .6) { const q = ptAt(sibS(t)), f = win(t, tGo - .6, tHome + .6, .9); e = lerp(e, q[0] + 5, f*.7); n = lerp(n, q[1], f*.7); h = lerp(h, 16, f*.8); tilt = lerp(tilt, .4, f); }
     const T_ = WP(e, n); cam.position.set(T_.x, h, T_.z + h*tilt*1.9); cam.lookAt(T_.x, 0, T_.z - h*tilt*.15);
@@ -86,12 +86,12 @@ async function buildMap2() {
   function update(t) {
     H = setCam(t);
     const ps = clamp(H/11, 1, 6)*1.4;
-    PINS.forEach(Q => { const k = Q.t < 0 ? 1 : spring(t, Q.t, 1.6, 4.2); Q.g.visible = (Q.t < 0 || t > Q.t - .05) && !((Q.k === 'male' || Q.k === 'female') && t > at('2-25', .5)); Q.g.position.y = (1 - k)*2.2*ps; Q.g.scale.setScalar((Q.t < 0 || t > Q.t) ? ps : .01); Q.g.rotation.y = Math.sin(t*1.2 + Q.p[0])*.25; });
+    PINS.forEach(Q => { const k = Q.t < 0 ? 1 : spring(t, Q.t, 1.6, 4.2); Q.g.visible = (Q.t < 0 || t > Q.t - .05) && !((Q.k === 'male' || Q.k === 'female') && t > at('2-26', .1)); Q.g.position.y = (1 - k)*2.2*ps; Q.g.scale.setScalar((Q.t < 0 || t > Q.t) ? ps : .01); Q.g.rotation.y = Math.sin(t*1.2 + Q.p[0])*.25; });
     // 走路的小人
     const s = sAt(t), q = ptAt(s), q2 = ptAt(s + .5), walking = sAt(t + 1/30) - s > .02;
-    hero.visible = t < E_('2-21') + .6; const hw = place(hero, ...q); faceDir(hero, hw, WP(...q2));
+    hero.visible = t < E_('2-22') + .6; const hw = place(hero, ...q); faceDir(hero, hw, WP(...q2));
     if (!walking) hero.rotation.y = Math.PI*.9;
-    poseMascot(hero, {walk: walking ? 1 : 0, ph: t*12, t, face: walking ? 'n' : 'front', blink: blinkAt(t), aR: !walking && t > E_('2-21') - 1 ? {x: 0, z: 2.4 + Math.sin(t*14)*.3} : null});
+    poseMascot(hero, {walk: walking ? 1 : 0, ph: t*12, t, face: walking ? 'n' : 'front', blink: blinkAt(t), aR: !walking && t > E_('2-22') - 1 ? {x: 0, z: 2.4 + Math.sin(t*14)*.3} : null});
     // 早上
     const kidsOn = t > T22 - .3 && t < tHome + .4;
     kids.forEach((k, i) => { k.visible = kidsOn; if (!kidsOn) return;
@@ -105,7 +105,9 @@ async function buildMap2() {
   }
   // ---- 疊字 ----
   const sx = (e, n, y = 0) => scr(cam, ...WP(e, n, y).toArray());
-  const path = (pts, k) => { const n = Math.max(2, Math.ceil(pts.length*k)); let d = ''; for (let i = 0; i < n && i < pts.length; i++) { const [x, y] = sx(...pts[i]); d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); } return d; };
+  // 畫路線：投影到螢幕後，可以往法線方向平移幾個像素（紅、綠並排才看得出是兩條）
+  const path = (pts, k, off = 0) => { const n = Math.min(pts.length, Math.max(2, Math.ceil(pts.length*k))); const P = []; for (let i = 0; i < n; i++) P.push(sx(...pts[i]));
+    let d = ''; for (let i = 0; i < n; i++) { let [x, y] = P[i]; if (off) { const a = P[Math.max(0, i - 2)], b = P[Math.min(n - 1, i + 2)], tx = b[0] - a[0], ty = b[1] - a[1], L = Math.hypot(tx, ty) || 1; x += -ty/L*off; y += tx/L*off; } d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); } return d; };
   const POL = (x, y, src, name, op, r, w = 380) => { if (op <= 0) return ''; const h = w*692/568, sl = (1 - easeOut(op))*80;
     return `<g opacity="${op}" transform="translate(${x},${y + sl}) rotate(${r})"><rect x="${-w/2 - 4}" y="${-h/2 + 10}" width="${w + 28}" height="${h + 88}" fill="#1a0d06" opacity=".35" filter="url(#soft)"/><rect x="${-w/2 - 14}" y="${-h/2 - 14}" width="${w + 28}" height="${h + 84}" fill="#FFF8EC"/>
       <image href="${src}" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>${T(w/2 - 8, h/2 - 10, '影像：Google 街景', 16, '#fff', 'end', 500, 'stroke="#000" stroke-width="3" paint-order="stroke"')}
@@ -115,42 +117,37 @@ async function buildMap2() {
   function overlay(t) {
     let s = '';
     // 走過的路：奶油色小圓點
-    if (t < E_('2-21') + .8) { const sNow = sAt(t), o = 1 - fade(t, E_('2-21') + .2, .5); let dots = ''; for (let d = 1; d < sNow - 1.5; d += 3.2) { const [x, y] = sx(...ptAt(d), .05); dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="#FFF3DC" stroke="#3A2216" stroke-width="2.5"/>`; } s += `<g opacity="${o}">${dots}</g>`; }
+    if (t < E_('2-22') + .8) { const sNow = sAt(t), o = 1 - fade(t, E_('2-22') + .2, .5); let dots = ''; for (let d = 1; d < sNow - 1.5; d += 3.2) { const [x, y] = sx(...ptAt(d), .05); dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6" fill="#FFF3DC" stroke="#3A2216" stroke-width="2.5"/>`; } s += `<g opacity="${o}">${dots}</g>`; }
     // 圖釘名稱
-    PINS.forEach(Q => { if (Q.t >= 0 && t < Q.t + .15) return; let o = Q.t < 0 ? 1 : fade(t, Q.t + .15, .35); if (Q.k !== 'school' && Q.k !== 'shop') o *= 1 - fade(t, at('2-25', .5), .5); if (o <= 0) return;
-      const [x, y] = scrObj(cam, Q.g, 1.05*Q.g.scale.x); o *= 1 - clamp((y - 830)/40, 0, 1); if (o <= 0) return; s += TT(x, y - 30, Q.name, 46, '#FFF6E6', 'middle', o); if (Q.sub) s += TT(x, y + 10, Q.sub, 30, '#FFE0B8', 'middle', o*fade(t, at('2-21', .5), .35)); });
+    PINS.forEach(Q => { if (Q.t >= 0 && t < Q.t + .15) return; let o = Q.t < 0 ? 1 : fade(t, Q.t + .15, .35); if (Q.k !== 'school' && Q.k !== 'shop') o *= 1 - fade(t, at('2-26', .12), .5); if (o <= 0) return;
+      const [x, y] = scrObj(cam, Q.g, 1.05*Q.g.scale.x); o *= 1 - clamp((y - 830)/40, 0, 1); if (o <= 0) return; s += TT(x, y - 30, Q.name, 46, '#FFF6E6', 'middle', o); if (Q.sub) s += TT(x, y + 10, Q.sub, 30, '#FFE0B8', 'middle', o*fade(t, at('2-22', .5), .35)); });
     // 校門、台9線、火車橋
-    { const o = win(t, .3, at('2-18', .55), .3); if (o > 0) { const [x, y] = sx(...P.gate); s += TT(x + 70, y + 60, '出校門右轉', 42, '#FFE8C8', 'start', o); } }
-    { const o = win(t, at('2-18', .3), at('2-18', .8), .3); if (o > 0) { const [x, y] = sx(...P.light); s += TT(x, y - 70, '紅綠燈過馬路', 42, '#FFE8C8', 'middle', o); } }
-    { const o = win(t, at('2-21', .08), E_('2-21') + .4, .3); if (o > 0) { const [x, y] = sx(...P.bridge); s += TT(x, y - 60, '火車橋', 44, '#FFE8C8', 'middle', o); } }
-    { const o = fade(t, .2, .4)*(1 - fade(t, at('2-25', .4), .5)) + win(t, T27, T29, .4)*.0; if (o > 0) { const [x, y] = sx(-44, 150); s += TT(x, y, '台9線', 34, 'rgba(255,246,230,.85)', 'middle', o); } }
+    { const o = win(t, .3, at('2-19', .55), .3); if (o > 0) { const [x, y] = sx(...P.gate); s += TT(x + 70, y + 60, '出校門右轉', 42, '#FFE8C8', 'start', o); } }
+    { const o = win(t, at('2-19', .3), at('2-19', .8), .3); if (o > 0) { const [x, y] = sx(...P.light); s += TT(x, y - 70, '紅綠燈過馬路', 42, '#FFE8C8', 'middle', o); } }
+    { const o = win(t, at('2-22', .08), E_('2-22') + .4, .3); if (o > 0) { const [x, y] = sx(...P.bridge); s += TT(x, y - 60, '火車橋', 44, '#FFE8C8', 'middle', o); } }
+    { const o = fade(t, .2, .4)*(1 - fade(t, at('2-26', .12), .5)) + win(t, T27, T29, .4)*.0; if (o > 0) { const [x, y] = sx(-44, 150); s += TT(x, y, '台9線', 34, 'rgba(255,246,230,.85)', 'middle', o); } }
     // 宿舍照片＋可以洗澡
-    const pm = win(t, at('2-18', .62), L('2-21').start + .3, .4), pf = win(t, L('2-19').start + .2, L('2-21').start + .3, .4);
+    const pm = win(t, at('2-19', .62), L('2-22').start + .3, .4), pf = win(t, L('2-20').start + .2, L('2-22').start + .3, .4);
     s += POL(330, 400, 'assets/dorm_m.jpg', '男教師宿舍', pm, -3) + POL(1590, 400, 'assets/dorm_f.jpg', '女教師宿舍', pf, 2.5);
-    { const o = win(t, L('2-20').start + .2, L('2-21').start + .3, .3); if (o > 0) { s += shower(240, 790, 1.5, o) + TT(370, 808, '可以洗澡', 46, '#FFF6E6', 'middle', o) + shower(1500, 790, 1.5, o) + TT(1630, 808, '可以洗澡', 46, '#FFF6E6', 'middle', o); } }
+    { const o = win(t, L('2-21').start + .2, L('2-22').start + .3, .3); if (o > 0) { s += shower(240, 790, 1.5, o) + TT(370, 808, '可以洗澡', 46, '#FFF6E6', 'middle', o) + shower(1500, 790, 1.5, o) + TT(1630, 808, '可以洗澡', 46, '#FFF6E6', 'middle', o); } }
     // 早上：時鐘卡
-    { const o = win(t, T22, E_('2-23') + .3, .35); if (o > 0) { s += `<g opacity="${o}">` + TT(1560, 120, '早上', 52, '#FFE1A6', 'middle', 1);
-      const a = fade(t, at('2-23', .3), .3), b = fade(t, at('2-23', .5), .3);
+    { const o = win(t, T22, E_('2-24') + .3, .35); if (o > 0) { s += `<g opacity="${o}">` + TT(1560, 120, '早上', 52, '#FFE1A6', 'middle', 1);
+      const a = fade(t, at('2-24', .3), .3), b = fade(t, at('2-24', .5), .3);
       if (a > 0) s += `<g opacity="${a}">` + clockI(1450, 210, 36, 7, 10) + TL_(1510, 226, '07:10　起床', 46, '#FFF6E6', 'start', 1) + `</g>`;
       if (b > 0) s += `<g opacity="${b}">` + clockI(1450, 310, 36, 7, 40) + TL_(1510, 326, '07:40　出發', 46, '#FFF6E6', 'start', 1) + `</g>`; s += `</g>`; } }
-    { const o = win(t, at('2-23', .02), at('2-23', .5), .3); if (o > 0 && sibs[0].visible === false) { const [x, y] = sx(...P.school); } }
+    { const o = win(t, at('2-24', .02), at('2-24', .5), .3); if (o > 0 && sibs[0].visible === false) { const [x, y] = sx(...P.school); } }
     { const o = win(t, tGo - .2, tArr + .5, .3); if (o > 0) { const [x, y] = scrObj(cam, sibs[0], 1.4); s += TT(x, y - 20, '接小朋友的哥姐', 38, '#FFF3DF', 'middle', o); } }
     { const o = win(t, T22 + .4, tBack, .3); if (o > 0) { const [x, y] = sx(sp[0] - 2, sp[1] - 9, .8); s += TT(x, y + 150, '小朋友在這裡集合', 38, '#FFF3DF', 'middle', o); } }
     // 2-24 會議室早餐、禮堂集合
-    { const o = win(t, at('2-24', .05), at('2-25', .3), .3); if (o > 0) { const [x, y] = sx(...CF(23.5, 7), 1); s += TT(x, y - 30, '會議室：吃早餐', 44, '#FFF6E6', 'middle', o); } }
-    { const o = win(t, at('2-24', .5), at('2-25', .3), .3); if (o > 0) { const [x, y] = sx(...CF(95, 9), 1); s += clockI(x - 200, y - 44, 30, 8, 10) + TT(x + 20, y - 30, '08:10 禮堂集合', 44, '#FFE1A6', 'middle', o); } }
-    // 2-25 回家時間
-    { const o = win(t, L('2-25').start, L('2-26').start + .2, .35); if (o > 0) { s += `<g opacity="${o}">` + TT(1560, 120, '送小朋友回家', 52, '#FFE1A6', 'middle', 1);
-      const a = fade(t, at('2-25', .25), .3), b = fade(t, at('2-25', .6), .3);
-      if (a > 0) s += `<g opacity="${a}">` + clockI(1380, 210, 36, 4, 30) + TL_(1440, 226, '第一天　下午 4:30', 44, '#FFF6E6', 'start', 1) + `</g>`;
-      if (b > 0) s += `<g opacity="${b}">` + clockI(1380, 310, 36, 11, 55) + TL_(1440, 326, '第二天　中午 11:55', 44, '#FFF6E6', 'start', 1) + `</g>`; s += `</g>`; } }
+    { const o = win(t, at('2-25', .05), at('2-26', .12), .3); if (o > 0) { const [x, y] = sx(...CF(23.5, 7), 1); s += TT(x, y - 30, '會議室：吃早餐', 44, '#FFF6E6', 'middle', o); } }
+    { const o = win(t, at('2-25', .5), at('2-26', .12), .3); if (o > 0) { const [x, y] = sx(...CF(95, 9), 1); s += clockI(x - 200, y - 44, 30, 8, 10) + TT(x + 20, y - 30, '08:10 禮堂集合', 44, '#FFE1A6', 'middle', o); } }
     // 路線
     for (const k of ['red', 'green', 'up', 'common']) { const [a, b] = RK[k]; if (t < a) continue; const kk = clamp((t - a)/(b - a), 0, 1), o = k === 'common' ? 1 : 1;
-      const d = path(RT[k], ease(kk)); s += `<path d="${d}" fill="none" stroke="#2A160B" stroke-width="${k === 'common' ? 13 : 12}" stroke-linejoin="round" stroke-linecap="round" opacity=".55"/><path d="${d}" fill="none" stroke="${RCOL[k]}" stroke-width="${k === 'common' ? 7 : 6.5}" stroke-linejoin="round" stroke-linecap="round" opacity="${o}"/>`;
+      const d = path(RT[k], ease(kk), {red: -3.6, green: 3.6}[k] || 0), sw = {red: 6, green: 6, up: 7, common: 7}[k]; s += `<path d="${d}" fill="none" stroke="#2A160B" stroke-width="${sw + 6}" stroke-linejoin="round" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="${RCOL[k]}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" opacity="${o}"/>`;
       if (kk < 1) { const pts = RT[k], i = Math.min(pts.length - 1, Math.ceil(pts.length*ease(kk)) - 1), [x, y] = sx(...pts[i]); s += `<circle cx="${x}" cy="${y}" r="13" fill="${RCOL[k]}" stroke="#FFF8EE" stroke-width="4"/>`; } }
     // 三個名詞 → 右上角圖例
-    const W3 = [['向上', '#4FA2FF', .22, '藍色・最短'], ['向右', '#FF5B4A', .34, '紅色・繞一大圈'], ['八鄰', '#7BDD3A', .46, '綠色・彎進八鄰社區']];
-    W3.forEach(([w, c, k, sub], i) => { const t0 = at('2-26', k); if (t < t0) return; const o = fade(t, t0, .3), mv = ease(clamp((t - at('2-26', .86))/.7, 0, 1));
+    const W3 = [['向上', '#4FA2FF', .5, '藍色・最短'], ['向右', '#FF5B4A', .59, '紅色・繞一大圈'], ['八鄰', '#7BDD3A', .67, '綠色・彎進八鄰社區']];
+    W3.forEach(([w, c, k, sub], i) => { const t0 = at('2-26', k); if (t < t0) return; const o = fade(t, t0, .3), mv = ease(clamp((t - at('2-26', .88))/.7, 0, 1));
       const x = lerp(900 + i*330, 1560, mv), y = lerp(560, 140 + i*86, mv), fs = lerp(120, 56, mv), act = t < T28 ? 1 : (i === 0 ? win(t, T28, T29, .3) : i === 1 ? win(t, T29, T30, .3) : win(t, T30, T31, .3));
       s += `<g opacity="${o}"><text x="${x}" y="${y}" text-anchor="middle" font-family="huninn" font-size="${fs}" fill="${c}" stroke="#2A160B" stroke-width="${lerp(10, 7, mv)}" paint-order="stroke" stroke-linejoin="round">${w}</text>`;
       if (mv > .5) s += TL_(x + 70, y - 8, sub, 30, '#FFF6E6', 'start', (mv - .5)*2*(.55 + .45*act)) + `<rect x="${x - 70}" y="${y - 58}" width="${380}" height="${76}" rx="14" fill="${c}" opacity="${.18*act*(mv - .5)*2}"/>`;
