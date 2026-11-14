@@ -107,8 +107,12 @@ async function buildMap2() {
   // ---- 疊字 ----
   const sx = (e, n, y = 0) => scr(cam, ...WP(e, n, y).toArray());
   // 畫路線：投影到螢幕後，可以往法線方向平移幾個像素（紅、綠並排才看得出是兩條）
+  // off 可以是數字或 i => 偏移（第七版之後：八鄰進社區那段去回要疊成同一條線，不偏移）
   const path = (pts, k, off = 0) => { const n = Math.min(pts.length, Math.max(2, Math.ceil(pts.length*k))); const P = []; for (let i = 0; i < n; i++) P.push(sx(...pts[i]));
-    let d = ''; for (let i = 0; i < n; i++) { let [x, y] = P[i]; if (off) { const a = P[Math.max(0, i - 2)], b = P[Math.min(n - 1, i + 2)], tx = b[0] - a[0], ty = b[1] - a[1], L = Math.hypot(tx, ty) || 1; x += -ty/L*off; y += tx/L*off; } d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); } return d; };
+    let d = ''; for (let i = 0; i < n; i++) { let [x, y] = P[i]; const o = typeof off === 'function' ? off(i) : off; if (o) { const a = P[Math.max(0, i - 2)], b = P[Math.min(n - 1, i + 2)], tx = b[0] - a[0], ty = b[1] - a[1], L = Math.hypot(tx, ty) || 1; x += -ty/L*o; y += tx/L*o; } d += (i ? 'L' : 'M') + x.toFixed(1) + ',' + y.toFixed(1); } return d; };
+  // 綠線離開紅線（彎進八鄰社區、原路折返）的點：偏移漸變成 0
+  const GOFF = (() => { const far = MD.green.map(p => { let m = 1e9; for (const q of MD.red) { const d = (p[0] - q[0])**2 + (p[1] - q[1])**2; if (d < m) m = d; } return Math.sqrt(m) > 6; });
+    const idx = far.map((f, i) => f ? i : -1).filter(i => i >= 0); return MD.green.map((p, i) => { let k = 1e9; for (const j of idx) k = Math.min(k, Math.abs(i - j)); return 3.6*clamp(k/10, 0, 1); }); })();
   const POL = (x, y, src, name, op, r, w = 380) => { if (op <= 0) return ''; const h = w*692/568, sl = (1 - easeOut(op))*80;
     return `<g opacity="${op}" transform="translate(${x},${y + sl}) rotate(${r})"><rect x="${-w/2 - 4}" y="${-h/2 + 10}" width="${w + 28}" height="${h + 88}" fill="#1a0d06" opacity=".35" filter="url(#soft)"/><rect x="${-w/2 - 14}" y="${-h/2 - 14}" width="${w + 28}" height="${h + 84}" fill="#FFF8EC"/>
       <image href="${src}" x="${-w/2}" y="${-h/2}" width="${w}" height="${h}" preserveAspectRatio="xMidYMid slice"/>${T(w/2 - 8, h/2 - 10, '影像：Google 街景', 16, '#fff', 'end', 500, 'stroke="#000" stroke-width="3" paint-order="stroke"')}
@@ -144,7 +148,7 @@ async function buildMap2() {
     { const o = win(t, at('2-25', .5), at('2-26', .12), .3); if (o > 0) { const [x, y] = sx(...CF(95, 9), 1); s += clockI(x - 200, y - 44, 30, 8, 10) + TT(x + 20, y - 30, '08:10 禮堂集合', 44, '#FFE1A6', 'middle', o); } }
     // 路線
     for (const k of ['red', 'green', 'up', 'common']) { const [a, b] = RK[k]; if (t < a) continue; const kk = clamp((t - a)/(b - a), 0, 1), o = k === 'common' ? 1 : 1;
-      const d = path(RT[k], ease(kk), {red: -3.6, green: 3.6}[k] || 0), sw = {red: 6, green: 6, up: 7, common: 7}[k]; s += `<path d="${d}" fill="none" stroke="#2A160B" stroke-width="${sw + 6}" stroke-linejoin="round" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="${RCOL[k]}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" opacity="${o}"/>`;
+      const d = path(RT[k], ease(kk), k === 'green' ? (i => GOFF[i]) : ({red: -3.6}[k] || 0)), sw = {red: 6, green: 6, up: 7, common: 7}[k]; s += `<path d="${d}" fill="none" stroke="#2A160B" stroke-width="${sw + 6}" stroke-linejoin="round" stroke-linecap="round" opacity=".5"/><path d="${d}" fill="none" stroke="${RCOL[k]}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round" opacity="${o}"/>`;
       if (kk < 1) { const pts = RT[k], i = Math.min(pts.length - 1, Math.ceil(pts.length*ease(kk)) - 1), [x, y] = sx(...pts[i]); s += `<circle cx="${x}" cy="${y}" r="13" fill="${RCOL[k]}" stroke="#FFF8EE" stroke-width="4"/>`; } }
     // 三個名詞 → 右上角圖例
     const W3 = [['向上', '#4FA2FF', .5, '藍色・最短'], ['向右', '#FF5B4A', .59, '紅色・繞一大圈'], ['八鄰', '#7BDD3A', .67, '綠色・彎進八鄰社區']];
@@ -153,7 +157,7 @@ async function buildMap2() {
       s += `<g opacity="${o}"><text x="${x}" y="${y}" text-anchor="middle" font-family="huninn" font-size="${fs}" fill="${c}" stroke="#2A160B" stroke-width="${lerp(10, 7, mv)}" paint-order="stroke" stroke-linejoin="round">${w}</text>`;
       if (mv > .5) s += TL_(x + 70, y - 8, sub, 30, '#FFF6E6', 'start', (mv - .5)*2*(.55 + .45*act)) + `<rect x="${x - 70}" y="${y - 58}" width="${380}" height="${76}" rx="14" fill="${c}" opacity="${.18*act*(mv - .5)*2}"/>`;
       s += `</g>`; });
-    { const o = fade(t, tSpur - .2, .35); if (o > 0 && t > T30) { const [x, y] = sx(...MD.spurEnd); s += `<circle cx="${x}" cy="${y}" r="${18 + 6*Math.sin(t*5)}" fill="none" stroke="#7BDD3A" stroke-width="5" opacity="${o}"/>` + TT(x, y - 34, '八鄰社區', 44, '#E6FFD0', 'middle', o); } }
+    { const o = fade(t, tSpur - .2, .35); if (o > 0 && t > T30) { const [x, y] = sx(...MD.spurEnd); s += `<circle cx="${x}" cy="${y}" r="${18 + 6*Math.sin(t*5)}" fill="none" stroke="#7BDD3A" stroke-width="5" opacity="${o}"/>` + TT(x + 34, y + 14, '八鄰社區', 44, '#E6FFD0', 'start', o) + TT(x + 36, y + 60, '↩ 原路折返', 34, '#E6FFD0', 'start', o*fade(t, tSpur + .15, .35)); } }
     { const o = fade(t, T31 + .3, .35); if (o > 0) { const [x, y] = sx(...P.school); s += `<circle cx="${x}" cy="${y}" r="${30 + 8*Math.sin(t*5)}" fill="none" stroke="#FFE1A6" stroke-width="6" opacity="${o}"/>` + TT(x + 60, y + 18, '留校', 64, '#FFE1A6', 'start', o); } }
     // 指北針（地圖上方大約是西邊）
     { const [ax, ay] = sx(0, 0), [bx, by] = sx(0, 100), ang = Math.atan2(by - ay, bx - ax)*180/Math.PI, cx = 86, cy = 790;

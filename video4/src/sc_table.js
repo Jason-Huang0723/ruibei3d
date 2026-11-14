@@ -64,7 +64,7 @@ function buildTable() {
     for (const k in R1) { const [a, b, n] = R1[k]; s += box(X(a), Y1(2), X(b), Y1(13), k, t, n, n.length === 1 ? 16 : n.length > 2 ? 19 : 20); }
     s += box(X(21.4), Y1(2), X(29.5), Y1(13), 'x1', t, '', 17) + box(X(77), Y1(2), X(84.8), Y1(13), 'x3', t, '', 17);
     s += box(X(13), Y1(13), X(21.4), Y1(21), 'x4', t, '穿堂', 17);
-    s += box(X(18.1), Y1(55.4), X(27.6), Y1(64.6), 'x5', t, '器材室', 17) + box(X(27.6), Y1(55.6), X(78.6), Y1(64.6), 'kg', t, '國幼班', 22) + box(X(79.5), Y1(55.6), X(91), Y1(62.5), 'slide', t, '溜滑梯', 18);
+    s += box(X(27.6), Y1(55.6), X(78.6), Y1(64.6), 'kg', t, '國幼班', 22) + box(X(79.5), Y1(55.6), X(91), Y1(62.5), 'slide', t, '溜滑梯', 18);
     s += `<text x="${X(-1) + 4}" y="${Y1(29)}" text-anchor="start" font-family="huninn" font-size="20" fill="#7A4A2A">大門</text><path d="M${X(-1) + 2},${Y1(31.5)} h30" stroke="#7A4A2A" stroke-width="5"/>`;
     s += `<text x="${PX + 440}" y="${Y1(64.6) + 40}" text-anchor="middle" font-family="huninn" font-size="18" fill="#9A7458">（示意圖，左邊是大門、上方是北）</text>`;
     // 2-16：營期中不能上二樓 → 庶務前一天拿到禮堂
