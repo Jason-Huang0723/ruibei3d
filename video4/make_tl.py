@@ -1,5 +1,5 @@
 import json, re, subprocess
-D = json.load(open('vo_durs5.json')); S = dict(json.load(open('script5.json')))
+D = json.load(open('vo_durs5.json')); S = dict(json.load(open('script6.json')))
 P = json.load(open('aer/probe.json')); VO3 = {v['id']: v['t'] for v in P['vo']}
 X = 0.6            # 段落之間淡入淡出
 C0 = 4.3           # 3D 空拍片段從第幾秒開始用

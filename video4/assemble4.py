@@ -24,7 +24,7 @@ for s in TL['secs']:
         if l['start'] >= tr: vo.append((l['id'][2:], s['m0'] + l['start'] - tr))
 END = TL['END']
 args = ['ffmpeg', '-v', 'error', '-y']
-for i, _ in vo: args += ['-i', f'{D}/vo5/{i}.wav']
+for i, _ in vo: args += ['-i', f'{D}/vo6/{i}.wav']
 fc = ''.join(f'[{n}:a]aresample=48000,adelay={int(round(t*1000))}:all=1[a{n}];' for n, (i, t) in enumerate(vo))
 fc += ''.join(f'[a{n}]' for n in range(len(vo))) + f'amix=inputs={len(vo)}:normalize=0:dropout_transition=0,apad,atrim=0:{END:.3f}[out]'
 args += ['-filter_complex', fc, '-map', '[out]', '-ac', '1', '-ar', '48000', OUT + '/vo_track.wav']; run(args)
@@ -41,6 +41,6 @@ SM = {x['id']: x for x in TL['secs']}; mp = SM['map']
 t28 = mp['m0'] + [l for l in mp['lines'] if l['id'] == '2-28'][0]['start'] - mp.get('trim', 0) - 0.5; t_end = SM['room2']['m0'] + 0.3
 fc += f"[{last}]drawtext=fontfile={D}/fonts/huninn.ttf:text='道路：© OpenStreetMap 貢獻者':fontsize=22:fontcolor=0xFFF1DF@0.8:borderw=3:bordercolor=0x2A160B:x=1890-text_w:y=822:enable='between(t,{t28:.2f},{t_end:.2f})'[osm];"; last = 'osm'
 fc = fc.rstrip(';')
-out = sys.argv[1] if len(sys.argv) > 1 else OUT + '/final_v5.mp4'
+out = sys.argv[1] if len(sys.argv) > 1 else OUT + '/final_v6.mp4'
 cmd = ['ffmpeg', '-v', 'error', '-stats', '-y'] + inp + ['-filter_complex', fc, '-map', f'[{last}]', '-map', f'{len(segs)}:a', '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '19', '-pix_fmt', 'yuv420p', '-r', '30', '-c:a', 'aac', '-b:a', '160k', '-t', f'{END:.3f}', '-movflags', '+faststart', out]
 run(cmd); print('done', out, END)
